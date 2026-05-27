@@ -1,0 +1,227 @@
+Tolong buatkan step by step, secara detail dan pelan pelan, untuk project ini, one step at a time, page by page, fitur by fitur, mulai dari backend dulu, tes fitur, tes security, baru lanjut ke frontend.
+---
+
+# 🧠 PROMPT PENGEMBANGAN PROYEK KKN (UPDATED)
+
+## 📌 Judul Proyek
+
+**Website Informasi & Budaya Desa Kawasi & Soligi — Pulau Obi**
+
+*Platform informasi desa modern berbasis visual, dokumentasi budaya, dan arsip digital jangka panjang. Bukan portal administrasi.*
+
+## 🎯 Tujuan Utama
+
+Menjadi pusat informasi digital yang memperkenalkan identitas, potensi, dan budaya Desa Kawasi & Soligi. Fokus pada:
+
+* Dokumentasi visual & budaya Pulau Obi (Disatukan sebagai satu kesatuan)
+* Berita dinamis terpisah yang menjaga identitas masing-masing desa (Kawasi & Soligi)
+* Arsip digital jangka panjang untuk masyarakat & dokumentasi perjalanan tim KKN
+* Branding wilayah yang modern, non-birokratis, dan mudah diakses
+
+## 🛠 Tech Stack
+
+* **Frontend:** Next.js 14 (App Router) + TailwindCSS + `next/image` + Framer Motion (opsional)
+* **Backend:** Next.js Server Components / API Routes
+* **Database & Auth:** Supabase (PostgreSQL + RLS + Google OAuth)
+* **Storage:** Cloudinary / Supabase Storage (untuk Media/Images)
+* **Maps:** `react-leaflet` + OpenStreetMap *(Catatan: Fitur maps ditunda, siapkan sebagai page kosong/placeholder dulu)*
+* **State/Data Fetching:** Next.js `fetch` dengan ISR (`revalidate: 3600`) atau SWR/React Query
+
+---
+
+## 🗺️ Skema Routing & Struktur Folder (`app/`)
+
+Terapkan **File-based Routing** Next.js 14 secara modular tanpa saling mengganggu antar-sektor:
+
+```text
+app/
+├── layout.tsx                      # Root layout (Navbar & Footer global)
+├── page.tsx                        # Beranda Utama (Hero cinematic, mix preview)
+│
+├── profil/
+│   └── [slug]/page.tsx             # /profil/kawasi & /profil/soligi (Sejarah, visi-misi, statistik)
+│
+├── berita/
+│   ├── page.tsx                    # /berita (Portal utama / Feed gabungan dengan label desa)
+│   ├── [desa]/page.tsx             # /berita/kawasi & /berita/soligi (Daftar berita per desa)
+│   └── [desa]/[slug]/page.tsx      # /berita/[desa]/[slug] (Halaman detail baca berita)
+│
+├── budaya/
+│   ├── page.tsx                    # /budaya (Katalog Budaya Obi - Disatukan dengan filter kategori)
+│   └── [slug]/page.tsx             # /budaya/[slug] (Halaman detail artikel budaya)
+│
+├── galeri/
+│   └── page.tsx                    # /galeri (Masonry grid foto umum keindahan & keseharian Obi)
+│
+├── peta/
+│   └── page.tsx                    # /peta (Page kosong / Placeholder untuk react-leaflet nanti)
+│
+├── flora-fauna/
+│   └── page.tsx                    # /flora-fauna (Katalog visual kekayaan alam/endemik Obi)
+│
+├── kamus-obi/
+│   └── page.tsx                    # /kamus-obi (Kamus interaktif penerjemah bahasa lokal ke Indonesia)
+│
+├── kkn/                             # SECTION KKN HUB (Arsip Pengabdian Tim)
+│   ├── profile/page.tsx            # /kkn/profile (Foto tim, divisi, plotting desa, card anggota)
+│   ├── jurnal/
+│   │   ├── page.tsx                # /kkn/jurnal (Timeline blog diari perjalanan harian tim)
+│   │   └── [slug]/page.tsx         # /kkn/jurnal/[slug] (Detail cerita harian + mini carousel foto)
+│   ├── dokumentasi/page.tsx        # /kkn/dokumentasi (Pusat foto operasional tim: survey, sosial, proker)
+│   └── hasil-proker/page.tsx       # /kkn/hasil-proker (Etalase laporan capaian program kerja non-website)
+│
+└── admin/                          # LOCK WITH SUPABASE AUTH & RLS
+    ├── page.tsx                    # /admin (Dashboard CMS)
+    ├── berita/page.tsx             # /admin/berita (Form input berita - Wajib pilih desa)
+    ├── budaya/page.tsx             # /admin/budaya (Form input budaya - Fokus tag kategori)
+    ├── galeri/page.tsx             # /admin/galeri (Upload foto kompresi ≤ 1.5MB)
+    └── kkn/page.tsx                # /admin/kkn (Input jurnal harian & dokumentasi tim)
+
+```
+
+---
+
+## 🗄️ Struktur Database (Supabase)
+
+dioptimalkan untuk multi-desa, relasi jelas, dan siap keamanan RLS.
+
+```sql
+-- Tabel Wilayah
+create table villages (
+  id uuid default gen_random_uuid() primary key,
+  name varchar not null,
+  slug varchar unique not null,
+  description text,
+  history text,
+  vision text,
+  mission text,
+  created_at timestamp default now()
+);
+
+-- Statistik Desa
+create table village_statistics (
+  id uuid default gen_random_uuid() primary key,
+  village_id uuid references villages(id) on delete cascade,
+  population integer,
+  households integer,
+  hamlets integer,
+  area_km2 numeric,
+  updated_at timestamp default now()
+);
+
+-- Berita (Terpisah Struktural per Desa)
+create table news (
+  id uuid default gen_random_uuid() primary key,
+  village_id uuid references villages(id) on delete cascade,
+  title varchar not null,
+  slug varchar unique not null,
+  content text not null,
+  thumbnail_url text,
+  author_name varchar,
+  published_at timestamp default now(),
+  created_at timestamp default now()
+);
+
+-- Artikel Budaya (Satu Kesatuan Obi)
+create table culture_articles (
+  id uuid default gen_random_uuid() primary key,
+  village_id uuid references villages(id) on delete set null, -- Opsional, asal muasal saja
+  title varchar not null,
+  slug varchar unique not null,
+  category varchar not null, -- Tradisi, Kuliner, Bahari, Kerajinan, Cerita Rakyat
+  content text not null,
+  thumbnail_url text,
+  published_at timestamp default now(),
+  created_at timestamp default now()
+);
+
+-- Galeri Umum Desa
+create table galleries (
+  id uuid default gen_random_uuid() primary key,
+  village_id uuid references villages(id) on delete cascade,
+  title varchar,
+  image_url text not null,
+  category varchar not null, -- Alam, Kegiatan, Budaya, Keseharian
+  description text,
+  uploaded_at timestamp default now()
+);
+
+-- KKN HUB: Profil Anggota
+create table kkn_members (
+  id uuid default gen_random_uuid() primary key,
+  name varchar not null,
+  role varchar not null, -- Ketua, Media, Teknologi, dll
+  study_program varchar not null,
+  village_assignment varchar not null, -- Kawasi / Soligi / Bersama
+  bio text,
+  photo_url text,
+  instagram_url varchar,
+  created_at timestamp default now()
+);
+
+-- KKN HUB: Jurnal Harian
+create table kkn_journals (
+  id uuid default gen_random_uuid() primary key,
+  title varchar not null,
+  slug varchar unique not null,
+  content text not null,
+  cover_image text,
+  activity_date date not null,
+  village_id uuid references villages(id) on delete set null,
+  created_at timestamp default now()
+);
+
+-- KKN HUB: Multi-images Jurnal
+create table kkn_journal_images (
+  id uuid default gen_random_uuid() primary key,
+  journal_id uuid references kkn_journals(id) on delete cascade,
+  image_url text not null,
+  caption varchar
+);
+
+-- KKN HUB: Dokumentasi Foto Kegiatan
+create table kkn_documentations (
+  id uuid default gen_random_uuid() primary key,
+  title varchar,
+  category varchar not null, -- Survey, Wawancara, Pembangunan, Edukasi, Sosial
+  description text,
+  image_url text not null,
+  village_id uuid references villages(id) on delete set null,
+  activity_date date,
+  created_at timestamp default now()
+);
+
+-- Manajemen User Admin
+create table users (
+  id uuid primary key, -- Relasi ke auth.users Supabase
+  name varchar,
+  email varchar unique,
+  role varchar default 'viewer' -- 'admin' | 'viewer'
+);
+
+```
+
+> 🔐 **Aturan Row Level Security (RLS):**
+> * Semua tabel aktif RLS.
+> * Akses Publik (`SELECT`) diizinkan untuk semua tabel (Read-Only).
+> * Akses Mutasi (`INSERT`, `UPDATE`, `DELETE`) dikunci ketat, hanya bisa dilakukan oleh user Terotentikasi yang memiliki `role = 'admin'`.
+> 
+> 
+
+---
+
+## 🎨 UI/UX Guidelines
+
+* **Gaya:** Tropical Coastal Cultural UI (Modern, clean, editorial, whitespace luas).
+* **Palet Warna:** Biru laut lembut (`#2B6CB0`), hijau tropis (`#38A169`), beige pasir (`#F5F1E6`), putih bersih (`#FFFFFF`).
+* **Tipografi:** Sans-serif modern (`Inter` / `Nunito`) untuk isi teks, Serif elegan (`Playfair Display` / `Merriweather`) untuk judul/heading teks kebudayaan.
+* **Komponen Media:** Wajib menggunakan komponen `next/image` bawaan Next.js. Wajib menggunakan format WebP, penentuan `sizes` yang responsif, dan optimasi *lazy loading* otomatis.
+
+---
+
+## 🤖 Instruksi Eksekusi untuk AI Developer
+
+1. **Fase Awal:** Setup struktur project Next.js 14 berbasis App Router sesuai dengan peta folder di atas. Konfigurasikan Supabase Client SDK untuk sisi *frontend* dan *backend*.
+2. **Fase Layout:** Buat komponen pembungkus global `Header` (Navbar dengan menu navigasi yang mencakup link baru /flora-fauna dan /kamus-obi) serta komponen `Footer`.
+3. **Fase UI Reusable:** Sediakan komponen *skeleton loader* melalui file `loading.tsx` pada halaman-halaman utama demi kenyamanan UX ketika proses pengambilan data (fetching) berlangsung.
+4. **Optimasi Upload Frontend:** Pada form halaman `/admin`, buat fungsi pembatas ukuran file gambar maksimal 1.5MB sebelum dikirim ke *cloud storage* guna menghemat penyimpanan dan bandwidth internet di lokasi KKN.
