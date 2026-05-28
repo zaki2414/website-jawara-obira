@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // ✅ 1. Tambahkan useEffect di import
+import { useState, useEffect } from "react";
 import { validateImageFile, generateSlug } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,7 +14,7 @@ export default function UploadForm({ userType }: UploadFormProps) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [village, setVillage] = useState("kawasi");
+  const [village, setVillage] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";

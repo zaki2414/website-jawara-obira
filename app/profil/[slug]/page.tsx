@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 export const revalidate = 3600
 
 export default async function VillageProfile({ params }: { params: Promise<{ slug: string }> }) {
-  // ⚠️ WAJIB: await params dulu!
   const { slug } = await params
   const { data: village, error } = await getVillageBySlug(slug)
   

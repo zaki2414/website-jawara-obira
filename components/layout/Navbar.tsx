@@ -6,7 +6,7 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client";
 
 const navLinks = [
   { href: "/", label: "Beranda" },
-  { href: "/profil/kawasi", label: "Profil" },
+  { href: "/profil", label: "Profil" },
   { href: "/berita", label: "Berita" },
   { href: "/budaya", label: "Budaya" },
   { href: "/galeri", label: "Galeri" },
