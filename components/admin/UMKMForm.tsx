@@ -488,7 +488,7 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-3 bg-ocean-600 text-white font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50"
+          className="px-6 py-3 bg-ocean-600 text-ocean-600 font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50"
         >
           {loading ? "Menyimpan..." : isNew ? "📤 Simpan UMKM" : "💾 Update"}
         </button>
@@ -503,7 +503,7 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
 
       {/* Toast Success */}
       {showSuccess && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 bg-green-600 text-ocean-600 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up flex items-center gap-2">
           <span>✅</span>
           <span>UMKM berhasil {isNew ? "ditambahkan" : "diperbarui"}!</span>
         </div>

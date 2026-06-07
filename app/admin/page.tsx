@@ -64,15 +64,29 @@ export default async function AdminDashboard() {
       action: "Upload Foto",
     },
     {
-      title: "� Manajemen UMKM",
+      title: "🛒 Manajemen UMKM",
       description: "Kelola usaha mikro, kecil, dan menengah lokal.",
       href: "/admin/umkm",
       color: "bg-emerald-600 hover:bg-emerald-700",
       action: "Kelola UMKM",
     },
     {
+      title: "🪱 Manajemen Fauna",
+      description: "Kelola data fauna Obi",
+      href: "/admin/fauna-obi",
+      color: "bg-emerald-600 hover:bg-emerald-700",
+      action: "Kelola Fauna Obi",
+    },
+    {
+      title: "🪴 Manajemen Library Toga",
+      description: "Kelola koleksi tanaman toga.",
+      href: "/admin/toga",
+      color: "bg-emerald-600 hover:bg-emerald-700",
+      action: "Kelola Toga",
+    },
+    {
       title: "�🎒 KKN Hub",
-      description: "Kelola jurnal harian, dokumentasi, dan proker tim.",
+      description: "Kelola profil anggota, jurnal harian, dan proker tim.",
       href: "/admin/kkn",
       color: "bg-amber-500 hover:bg-amber-600",
       action: "Kelola KKN",
@@ -168,29 +182,6 @@ export default async function AdminDashboard() {
               </Link>
             ))}
           </div>
-        </section>
-
-        {/* Quick Tips */}
-        <section className="mt-10 p-4 bg-ocean-50 rounded-lg border border-ocean-100">
-          <h4 className="font-medium text-ocean-800 mb-2">💡 Tips Cepat:</h4>
-          <ul className="text-sm text-ocean-700 space-y-1 list-disc list-inside">
-            <li>
-              Gunakan <strong>Rich Text Editor</strong> untuk format teks berita
-              (bold, heading, list).
-            </li>
-            <li>
-              Thumbnail & gambar pendukung diupload langsung dari form
-              (auto-upload ke Cloudinary).
-            </li>
-            <li>
-              Slug akan ter-generate otomatis dari judul, tapi bisa diedit
-              manual untuk SEO.
-            </li>
-            <li>
-              Untuk gambar pendukung, posisi & rotasi sudah diatur otomatis
-              (kiri -3°, kanan +3°).
-            </li>
-          </ul>
         </section>
       </div>
     </main>

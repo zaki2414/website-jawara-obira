@@ -2,7 +2,6 @@
 import { getUMKMBySlug } from "@/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 
 export const revalidate = 3600;
 
@@ -39,6 +38,7 @@ export default async function UMKMDetail({
             fill
             priority
             className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="w-full h-full bg-sand-200 flex items-center justify-center text-6xl">

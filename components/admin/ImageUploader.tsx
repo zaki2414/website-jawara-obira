@@ -144,12 +144,12 @@ export default function ImageUploader({
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+            className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-ocean-600 text-xs rounded hover:bg-red-700"
           >
             Hapus
           </button>
           {loading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-sm">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-ocean-600 text-sm">
               ⏳ Upload...
             </div>
           )}

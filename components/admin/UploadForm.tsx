@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { validateImageFile, generateSlug } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import Image from "next/image";
 
 type UploadFormProps = {
   userType: "gallery" | "news" | "culture" | "kkn";
@@ -21,10 +22,7 @@ export default function UploadForm({ userType }: UploadFormProps) {
     text: string;
   } | null>(null);
 
-  // ✅ 2. Tambahkan useEffect ini untuk sinkronisasi state saat mount (fix hydration)
   useEffect(() => {
-    // Pastikan state file selalu null saat pertama kali load di client
-    // agar sesuai dengan render awal di server
     if (file === undefined) setFile(null);
   }, [file]);
 
@@ -165,7 +163,7 @@ export default function UploadForm({ userType }: UploadFormProps) {
         />
         {preview && (
           <div className="mt-3 relative w-full h-40 rounded-lg overflow-hidden bg-sand-100">
-            <img
+            <Image
               src={preview}
               alt="Preview"
               className="w-full h-full object-cover"
@@ -237,7 +235,7 @@ export default function UploadForm({ userType }: UploadFormProps) {
         type="submit"
         disabled={loading || !file}
         suppressHydrationWarning={true}
-        className="w-full py-3 bg-ocean-600 text-white font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-ocean-600 text-ocean-600 font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? "Mengupload..." : "📤 Upload ke Galeri"}
       </button>

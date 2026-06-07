@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 type DeleteButtonProps = {
-  table: "news" | "culture_articles" | "galleries" | "kkn_documentations";
+  table: "news" | "culture_articles" | "galleries" | "kkn_documentations" | "kkn_members" | "kkn_journals" | "kkn_prokers" | "toga_plants" | "fauna_obi";
   id: string;
   title: string;
   redirectAfter?: string;

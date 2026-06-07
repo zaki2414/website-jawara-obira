@@ -2,7 +2,6 @@
 import { getCultureDetail } from "@/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 
 export const revalidate = 3600;
 
@@ -99,7 +98,7 @@ export default async function CultureDetail({
                         day: "numeric",
                         month: "long",
                         year: "numeric",
-                      }
+                      },
                     )}
                   </span>
                 )}
@@ -160,7 +159,9 @@ export default async function CultureDetail({
                   })}
                 </span>
               )}
-              {culture.villages && <span>📍 Asal: {culture.villages.name}</span>}
+              {culture.villages && (
+                <span>📍 Asal: {culture.villages.name}</span>
+              )}
             </div>
           </header>
 

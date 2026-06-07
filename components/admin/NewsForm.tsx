@@ -1,9 +1,8 @@
 // components/admin/NewsForm.tsx
 "use client";
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client"; // ✅ Gunakan browser client
 import { generateSlug } from "@/lib/utils";
 import RichTextEditor from "./RichTextEditor";
 import ImageUploader from "./ImageUploader";
@@ -16,8 +15,6 @@ type NewsFormProps = {
 
 export default function NewsForm({ initialData, isNew }: NewsFormProps) {
   const router = useRouter();
-
-  // Normalisasi extra_images dari DB (bisa string JSON atau array)
   const defaultExtra =
     typeof initialData?.extra_images === "string"
       ? JSON.parse(initialData.extra_images)
@@ -25,20 +22,14 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
-
-  // Menggunakan village_slug atau fallback relasi jika disesuaikan dengan query DB
   const [village, setVillage] = useState(
     initialData?.village_slug || initialData?.villages?.slug || "kawasi",
   );
-
   const [content, setContent] = useState(initialData?.content || "");
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail_url || "");
   const [author, setAuthor] = useState(initialData?.author_name || "Admin");
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // State key untuk memaksa komponen anak (uploader & editor) mereset total state internal mereka
   const [formKey, setFormKey] = useState(0);
-
   const [extraImages, setExtraImages] = useState([
     {
       url: defaultExtra[0]?.url || "",
@@ -55,7 +46,6 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
     text: string;
   } | null>(null);
 
-  // Otomatis menghilang setelah 3 detik jika Toast sukses muncul
   useEffect(() => {
     if (showSuccess) {
       const timer = setTimeout(() => setShowSuccess(false), 3000);
@@ -63,9 +53,14 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
     }
   }, [showSuccess]);
 
-  useEffect(() => {
-    if (!initialData?.slug && title) setSlug(generateSlug(title));
-  }, [title, initialData?.slug]);
+  // ✅ FIX: Pindahkan auto-generate slug ke event handler untuk menghindari warning React
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    if (isNew && !initialData?.slug) {
+      setSlug(generateSlug(newTitle));
+    }
+  };
 
   const resetForm = () => {
     setTitle("");
@@ -78,7 +73,6 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
       { url: "", caption: "" },
       { url: "", caption: "" },
     ]);
-    // Memicu remount komponen anak dengan menaikkan nilai key
     setFormKey((prev) => prev + 1);
   };
 
@@ -105,7 +99,7 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
     setMessage(null);
 
     try {
-      const supabase = createClient();
+      const supabase = createClient(); // ✅ Browser client
       let villageId = null;
 
       if (village) {
@@ -124,10 +118,11 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         thumbnail_url: thumbnail || null,
         author_name: author,
         village_id: villageId,
-        extra_images: extraImages.filter((img) => img.url), // Hanya simpan yang ada URL-nya
+        extra_images: extraImages.filter((img) => img.url),
         published_at: initialData?.published_at || new Date().toISOString(),
       };
 
+      // ✅ Lakukan mutasi langsung menggunakan browser client
       const { error } = isNew
         ? await supabase.from("news").insert(payload)
         : await supabase.from("news").update(payload).eq("id", initialData.id);
@@ -135,17 +130,16 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
       if (error) throw error;
 
       const successText = `Berita berhasil ${isNew ? "dibuat" : "diperbarui"}!`;
-
-      setMessage({
-        type: "success",
-        text: `✅ ${successText}`,
-      });
-      setShowSuccess(true); // Tampilkan popup Toast
+      setMessage({ type: "success", text: `✅ ${successText}` });
+      setShowSuccess(true);
 
       if (isNew) {
         resetForm();
       } else {
-        setTimeout(() => router.push("/admin/berita"), 1500);
+        setTimeout(() => {
+          router.refresh(); // ✅ Auto refresh list halaman admin
+          router.push("/admin/berita");
+        }, 1500);
       }
     } catch (err: any) {
       setMessage({ type: "error", text: `❌ Gagal: ${err.message}` });
@@ -161,17 +155,12 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
     >
       {message && (
         <div
-          className={`p-3 rounded-lg text-sm ${
-            message.type === "success"
-              ? "bg-green-50 text-green-700"
-              : "bg-red-50 text-red-700"
-          }`}
+          className={`p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
         >
           {message.text}
         </div>
       )}
 
-      {/* 1. Thumbnail Utama */}
       <section>
         <h3 className="font-serif text-lg font-bold text-ocean-800 mb-3">
           🖼️ Thumbnail Utama
@@ -184,16 +173,16 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         />
       </section>
 
-      {/* 2. Metadata Dasar */}
       <section className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Judul *
           </label>
+          {/* ✅ Gunakan handleTitleChange di sini */}
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={handleTitleChange}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
             placeholder="Contoh: Festival Bahari Obi 2026"
             required
@@ -240,7 +229,6 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         </div>
       </section>
 
-      {/* 3. Konten Teks */}
       <section>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           📝 Isi Berita *
@@ -252,7 +240,6 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         />
       </section>
 
-      {/* 4. Gambar Pendukung */}
       <section className="border-t border-sand-200 pt-6">
         <h3 className="font-serif text-lg font-bold text-ocean-800 mb-2">
           📸 Gambar Pendukung (Opsional)
@@ -278,7 +265,6 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         </div>
       </section>
 
-      {/* 5. Aksi */}
       <div className="flex gap-4 pt-4 border-t border-sand-200">
         <button
           type="submit"
@@ -300,7 +286,6 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         </button>
       </div>
 
-      {/* Toast Pop-up Success */}
       {showSuccess && (
         <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up flex items-center gap-2">
           <span>✅</span>

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 
 type ExtraImageUploaderProps = {
   value: string;
@@ -21,7 +22,6 @@ export default function ExtraImageUploader({
   const [captionInput, setCaptionInput] = useState(caption);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Selaraskan preview internal jika value berubah dari parent (misal saat reset)
   useEffect(() => {
     setPreview(value);
     setCaptionInput(caption);
@@ -32,7 +32,8 @@ export default function ExtraImageUploader({
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
-        const img = new Image();
+        // ✅ PERBAIKAN: Gunakan window.Image agar tidak konflik dengan komponen Next.js
+        const img = new window.Image(); 
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement("canvas");
@@ -112,7 +113,9 @@ export default function ExtraImageUploader({
     }
 
     setLoading(true);
-    setPreview(URL.createObjectURL(file));
+    // Menggunakan URL blob untuk preview instan
+    const localPreviewUrl = URL.createObjectURL(file);
+    setPreview(localPreviewUrl);
 
     try {
       const compressedBlob = await compressImage(file);
@@ -151,17 +154,21 @@ export default function ExtraImageUploader({
 
       {preview ? (
         <div className="relative">
-          <div className="relative w-full h-40 rounded-lg overflow-hidden bg-white shadow-sm">
-            <img
+          {/* ✅ PERBAIKAN: Container harus relative agar 'fill' bekerja tanpa error width */}
+          <div className="relative w-full h-48 rounded-lg overflow-hidden bg-white shadow-sm border border-sand-200">
+            <Image
               src={preview}
-              alt="Preview"
-              className="w-full h-full object-cover"
+              alt={`Preview pendukung ${slotNumber}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 400px"
+              unoptimized={preview.startsWith('blob:')} // Opsional: bypass optimasi jika masih blob lokal
             />
           </div>
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+            className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white text-xs rounded-md shadow-sm hover:bg-red-700 transition-colors"
           >
             Hapus
           </button>
@@ -169,10 +176,10 @@ export default function ExtraImageUploader({
       ) : (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-ocean-400 hover:bg-white transition"
+          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-ocean-400 hover:bg-white transition group"
         >
-          <p className="text-gray-500 text-sm">Klik untuk upload gambar</p>
-          <p className="text-gray-400 text-xs mt-1">Otomatis dikecilkan ke JPEG kualitas tinggi</p>
+          <p className="text-gray-500 text-sm group-hover:text-ocean-600">Klik untuk upload gambar</p>
+          <p className="text-gray-400 text-xs mt-1">Otomatis kompresi JPEG 75%</p>
         </div>
       )}
 
@@ -192,13 +199,16 @@ export default function ExtraImageUploader({
             value={captionInput}
             onChange={handleCaptionChange}
             placeholder="Keterangan gambar (opsional)"
-            className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500 outline-none transition-all"
           />
         </div>
       )}
 
       {loading && (
-        <p className="text-sm text-ocean-600 mt-2">⏳ Mengompres & mengupload...</p>
+        <div className="flex items-center gap-2 mt-2">
+          <div className="w-3 h-3 border-2 border-ocean-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs text-ocean-600 font-medium">Mengompres & mengupload...</p>
+        </div>
       )}
     </div>
   );

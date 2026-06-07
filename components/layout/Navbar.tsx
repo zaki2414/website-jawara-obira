@@ -11,8 +11,8 @@ const navLinks = [
   { href: "/budaya", label: "Budaya" },
   { href: "/galeri", label: "Galeri" },
   { href: "/umkm", label: "UMKM" },
-  { href: "/flora-fauna", label: "Flora & Fauna" },
-  { href: "/kamus-obi", label: "Kamus Obi" },
+  { href: "/fauna-obi", label: "Fauna Obi" },
+  { href: "/toga", label: "Toga" },
   { href: "/kkn", label: "Tim Kami" },
 ];
 
