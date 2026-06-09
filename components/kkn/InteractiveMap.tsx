@@ -120,7 +120,7 @@ export default function InteractiveMap() {
         <svg
           ref={mapRef}
           viewBox="0 0 499 743"
-          className="w-full h-auto max-h-[743px] drop-shadow-xl"
+          className="w-full h-auto max-h-185.75 drop-shadow-xl"
           xmlns="http://www.w3.org/2000/svg"
         >
           {/* ===== DESA KAWASI (Bagian Atas) ===== */}

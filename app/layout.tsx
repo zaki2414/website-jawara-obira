@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
@@ -29,7 +30,8 @@ export default function RootLayout({
     <html lang="id" className={`${inter.variable} ${playfair.variable}`}>
       <body className="flex flex-col min-h-screen">
         <Navbar />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 🛠️ PERBAIKAN: Hapus max-w, mx-auto, dan padding di sini agar children bisa full-width */}
+        <main className="flex-1">
           {children}
         </main>
         <Footer />

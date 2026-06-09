@@ -60,7 +60,35 @@ export interface FaunaPayload {
   documentations?: { url: string; caption: string }[] | null;
 }
 
-// ✅ BARU: Interface untuk News & Culture
+export interface UMKMPayload {
+  name: string;
+  slug: string;
+  business_type: string;
+  village_id: string | null;
+  short_description?: string;
+  full_description?: string;
+  location_text?: string;
+  thumbnail_url?: string | null;
+}
+
+export interface UMKMGalleryPayload {
+  umkm_id: string;
+  image_url: string;
+  caption?: string | null;
+  sort_order: number;
+}
+
+export interface UMKMFeaturePayload {
+  umkm_id: string;
+  feature: string;
+}
+
+export interface UMKMProductPayload {
+  umkm_id: string;
+  category_id: string | null;
+  item_name: string;
+}
+
 export interface NewsPayload {
   title: string;
   slug: string;
@@ -344,8 +372,93 @@ export async function getUMKMBySlug(slug: string) {
   }
 }
 
+// ================= UMKM CRUD FUNCTIONS =================
+// Note: Fungsi ini untuk Server Components saja
+// Client Component (UMKMForm.tsx) tetap pakai createClient langsung
+
+export async function createUMKM(payload: UMKMPayload) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("umkm")
+      .insert(payload)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function updateUMKM(id: string, payload: Partial<UMKMPayload>) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("umkm")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function deleteUMKM(id: string) {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from("umkm").delete().eq("id", id);
+    return { error };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
+// Helper functions untuk relasi UMKM
+export async function createUMKMGallery(payload: UMKMGalleryPayload) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("umkm_gallery")
+      .insert(payload)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function createUMKMFeature(payload: UMKMFeaturePayload) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("umkm_features")
+      .insert(payload)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function createUMKMProduct(payload: UMKMProductPayload) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("umkm_products")
+      .insert(payload)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
 // ================= KKN TEAM QUERIES =================
-// (Dibiarkan sama seperti sebelumnya)
 export async function getAllKKNTeamMembers() {
   try {
     const supabase = await createClient();
@@ -447,7 +560,6 @@ export async function getKKNJournalsByMonth(
         let villageData: { name: string } | null = null;
         
         if (curr.villages) {
-          // ✅ Memperbaiki typo curr.va menjadi curr.villages
           if (Array.isArray(curr.villages) && curr.villages.length > 0) {
             villageData = { name: String(curr.villages[0].name) };
           } else if (!Array.isArray(curr.villages)) {

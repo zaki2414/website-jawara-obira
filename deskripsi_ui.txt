@@ -1,0 +1,825 @@
+=== DESKRIPSI UI - JAWARA OBIRA WEBSITE ===
+
+STRUKTUR LAYOUT UTAMA (Root Layout)
+├── Navbar Component
+├── Main Content Area (children pages)
+└── Footer Component
+
+===========================================
+PUBLIC PAGES - USER FACING
+===========================================
+
+1. HOME PAGE (/)
+   Lokasi: app/page.tsx
+   Deskripsi: Landing page utama yang menampilkan dashboard portal informasi desa
+   Komponen:
+   - Link: Navigation links ke semua halaman utama
+   - Section: Profil Desa (link ke /profil)
+   - Section: Berita & Budaya (links ke /berita, /berita/kawasi, /berita/soligi, /budaya)
+   - Section: UMKM & Ekonomi Lokal (link ke /umkm)
+   - Section: Alam & Lingkungan (mencakup links ke fauna, gallery, toga, etc)
+   - Section: KKN Hub (links ke /kkn/tim, /kkn/jurnal, /kkn/proker)
+   Styling: Grid layout responsive, card-based navigation dengan emoji icons
+   
+---
+
+2. BERITA - HALAMAN DAFTAR (/berita)
+   Lokasi: app/berita/page.tsx
+   Deskripsi: Menampilkan semua berita terkini dari kedua desa dalam format grid
+   Komponen:
+   - getAllNews() query: Fetch semua berita
+   - Link: Navigation ke detail berita
+   - Image: Thumbnail berita atau default emoji
+   - Heading: "Berita Terkini"
+   - Card: Berita card dengan judul, thumbnail, badge desa, tanggal publikasi
+   Styling: Grid 3 kolom (responsive 1-2-3), card dengan hover effects, border dan shadow
+   Features:
+   - Lazy loading images
+   - Revalidate setiap 1 jam (3600 detik)
+   - Link ke detail berita: /berita/{desa}/{slug}
+
+---
+
+3. BERITA - HALAMAN DESA (/berita/[desa])
+   Lokasi: app/berita/[desa]/page.tsx
+   Deskripsi: Menampilkan berita spesifik untuk desa tertentu (Kawasi atau Soligi)
+   Komponen:
+   - getNewsByVillageSlug() query: Filter berita berdasarkan slug desa
+   - Link: Navigation ke detail berita
+   - Image: Thumbnail berita
+   - Heading: "Berita {Nama Desa}"
+   - Paragraph: "Kabar terbaru dari Desa {Nama Desa}"
+   - Card: Berita dalam format horizontal (flex row) dengan thumbnail di kiri
+   Styling: Responsive layout (1 kolom di mobile, grid di desktop), list view
+   Features: 
+   - Title, thumbnail, date display
+   - Line clamp untuk text yang panjang
+
+---
+
+4. BERITA - HALAMAN DETAIL (/berita/[desa]/[slug])
+   Lokasi: app/berita/[desa]/[slug]/page.tsx
+   Deskripsi: Menampilkan artikel berita lengkap dengan konten dan extra images
+   Komponen:
+   - getNewsDetail() query: Fetch detail berita
+   - Image: Thumbnail utama (hero image) di atas artikel
+   - Image: Extra images dengan captions (sampai 2 gambar di samping pada desktop)
+   - Heading: Judul artikel
+   - Metadata: Author, tanggal publikasi, desa
+   - HTML Content: Konten artikel (rich text)
+   - Card: Gallery dengan rotasi visual
+   Styling:
+   - Desktop: Grid 3 kolom (extra images kiri, konten tengah, sidebar kanan)
+   - Mobile: Single column layout
+   - Images dengan hover rotation effects
+   Features:
+   - Priority image loading
+   - Extra images dengan rotasi -3° default, rotate 0° on hover
+   - Max width 6xl container
+
+---
+
+5. BUDAYA - HALAMAN DAFTAR (/budaya)
+   Lokasi: app/budaya/page.tsx
+   Deskripsi: Menampilkan katalog budaya, tradisi, dan kearifan lokal Pulau Obi
+   Komponen:
+   - getAllCulture() query: Fetch semua artikel budaya
+   - Link: Navigation ke detail budaya
+   - Image: Thumbnail budaya atau default emoji 🎭
+   - Heading: "Katalog Budaya Obi"
+   - Subheading: "Warisan tradisi, kuliner, dan kearifan lokal Pulau Obi"
+   - Badge: Kategori budaya
+   - Card: Artikel budaya dengan thumbnail, kategori, judul
+   Styling: Grid 3 kolom (responsive 1-2-3), card dengan border dan shadow
+   Features:
+   - Lazy loading images
+   - Revalidate setiap 1 jam
+   - Line clamp judul untuk consistency
+
+---
+
+6. BUDAYA - HALAMAN DETAIL (/budaya/[slug])
+   Lokasi: app/budaya/[slug]/page.tsx
+   Deskripsi: Menampilkan artikel budaya lengkap dengan konten dan galeri
+   Komponen:
+   - getCultureDetail() query: Fetch detail budaya
+   - Image: Thumbnail utama (hero image)
+   - Image: Extra images dengan captions (galeri)
+   - Heading: Judul artikel
+   - Metadata: Kategori, tanggal publikasi
+   - HTML Content: Konten artikel (rich text)
+   - Card: Gallery dengan rotasi visual
+   Styling: Sama seperti detail berita (grid 3 kolom di desktop, single column di mobile)
+   Features:
+   - Extra images parsing (JSON string atau array)
+   - Priority image loading
+   - Visual effects untuk gallery
+
+---
+
+7. UMKM - HALAMAN DAFTAR (/umkm)
+   Lokasi: app/umkm/page.tsx
+   Deskripsi: Direktori UMKM lokal Kawasi & Soligi dengan filter pencarian dan tipe
+   Komponen:
+   - getAllUMKM() query: Fetch UMKM dengan filter search dan type
+   - Form: Filter bar dengan input search dan dropdown type
+   - Button: Filter submit button
+   - Link: Navigation ke detail UMKM
+   - Image: Thumbnail UMKM
+   - Heading: "🏪 Direktori UMKM Lokal"
+   - Subheading: "Dokumentasi usaha, warung, dan jasa warga Kawasi & Soligi"
+   - Card: UMKM card dengan thumbnail, nama, tipe usaha
+   Styling: 
+   - Filter section: Flex row dengan input dan select (wraps di mobile)
+   - Grid 3 kolom untuk UMKM cards
+   Features:
+   - Search by nama/keyword
+   - Filter by business type (toko, warung_makan, hasil_laut, jasa, kerajinan)
+   - Query params: ?q=search&type=tipe
+
+---
+
+8. UMKM - HALAMAN DETAIL (/umkm/[slug])
+   Lokasi: app/umkm/[slug]/page.tsx
+   Deskripsi: Menampilkan detail lengkap UMKM termasuk produk, lokasi, kontak
+   Komponen:
+   - getUMKMBySlug() query: Fetch detail UMKM
+   - Image: Hero thumbnail dengan overlay gradient
+   - Heading: Nama UMKM
+   - Badge: Business type
+   - Contact Info: Nomor telepon, lokasi, jam operasional
+   - Description: Deskripsi usaha
+   - Products Section: Produk per kategori dengan icon
+   - Photo Gallery: Galeri foto UMKM
+   Styling:
+   - Hero section dengan hero image dan text overlay
+   - Product listing dengan kategori headers dan icons
+   - Grid layout untuk gallery
+   Features:
+   - Products organized by category
+   - Multiple gallery images
+   - Contact information display
+
+---
+
+9. GALERI - HALAMAN (/galeri)
+   Lokasi: app/galeri/page.tsx
+   Deskripsi: Galeri foto keindahan alam, budaya, dan keseharian Pulau Obi
+   Komponen:
+   - Fetch dari table galleries: Semua foto dalam urutan terbaru
+   - Image: Foto dengan aspect ratio 2:3 (400x600)
+   - Heading: "Galeri Foto Obi"
+   - Subheading: "Keindahan alam, budaya, dan keseharian Pulau Obi"
+   - Badge: Kategori foto
+   - Card: Foto card dengan hover scale effect
+   Styling:
+   - CSS Columns masonry layout (1-2-3 kolom responsive)
+   - Images dengan lazy loading
+   - Group dengan hover effects
+   Features:
+   - Hover scale transform untuk images
+   - Category badges
+   - Title dan description support
+
+---
+
+10. FAUNA OBI - HALAMAN (/fauna-obi)
+    Lokasi: app/fauna-obi/page.tsx
+    Deskripsi: Katalog fauna Pulau Obi dengan filter dan detail card
+    Komponen:
+    - Client component dengan useState
+    - Fetch fauna dari database
+    - Filter controls (search, class, IUCN status)
+    - Image: Thumbnail fauna
+    - Card: Fauna card dengan informasi dasar
+    - Sidebar: Filter panel
+    - Modal/Detail: Expanded view dengan informasi lengkap
+    Styling:
+    - Filter section di sidebar
+    - Grid layout untuk fauna cards
+    - Color-coded IUCN status badges (LC=green, VU=orange, EN=red, CR=dark red)
+    Features:
+    - IUCN status color coding
+    - Local name, scientific name
+    - Conservation info, habitat, diet, behavior, distribution
+    - Documentation photos gallery
+    - Responsive sidebar (mobile/desktop)
+
+---
+
+11. TOGA - HALAMAN (/toga)
+    Lokasi: app/toga/page.tsx
+    Deskripsi: Library tanaman obat tradisional (TOGA) Pulau Obi
+    Komponen:
+    - Client component dengan useState
+    - Fetch toga plants dari database
+    - Plant list: Sidebar dengan daftar tanaman
+    - Selected plant display: Detail tanaman terpilih
+    - Image: Thumbnail tanaman dengan gallery
+    - Heading: Nama Indonesia dan Latin
+    - Description: Deskripsi tanaman
+    - Health benefits: List manfaat kesehatan
+    - Recipes: Resep/cara penggunaan
+    Styling:
+    - Two-panel layout (list di sidebar, detail di main area)
+    - Grid gallery untuk foto tanaman
+    - Responsive design
+    Features:
+    - Interactive plant selection
+    - Query param support (?plant=slug)
+    - Health benefits display
+    - Recipe information
+    - Gallery image support
+
+---
+
+12. PROFIL WILAYAH (/profil)
+    Lokasi: app/profil/page.tsx
+    Deskripsi: Profil wilayah Desa Kawasi dan Soligi dengan peta interaktif
+    Komponen:
+    - InteractiveMap Component: Peta interaktif untuk explore wilayah
+    - Heading: "Profil Wilayah"
+    - Subheading: "Jelajahi potensi, demografi, dan keunikan Desa Kawasi dan Desa Soligi"
+    - Section: Layout dengan centered content
+    Styling: Centered layout dengan peta responsive
+    Features:
+    - Interactive map component
+    - Demographics display
+    - Village potential information
+
+---
+
+13. KKN - HUB HALAMAN PUBLIK (/kkn)
+    Lokasi: app/kkn/page.tsx
+    Deskripsi: Halaman hub untuk menampilkan pilihan menu KKN (Tim, Jurnal, Proker)
+    Komponen:
+    - Heading: "🎒 Jawara Obira" (KKN-PPM UGM Periode II 2026)
+    - Subheading: "Gerbang informasi terintegrasi pelaksanaan Kuliah Kerja Nyata"
+    - Badge: "KKN-PPM UGM Periode II 2026"
+    - Card Menu:
+      * 👥 Anggota Tim KKN - link ke /kkn/tim
+      * 📖 Jurnal Harian - link ke /kkn/jurnal
+      * 🚀 Hasil Program Kerja - link ke /kkn/proker (dengan badge "Impact")
+    Styling: Centered layout dengan card menu
+    Features: Badge support untuk menu items
+
+---
+
+14. KKN TIM - HALAMAN DAFTAR (/kkn/tim)
+    Lokasi: app/kkn/tim/page.tsx
+    Deskripsi: Menampilkan anggota tim KKN dengan pengelompokan per desa
+    Komponen:
+    - getAllKKNTeamMembers() query: Fetch semua anggota
+    - Filter logic: Pisahkan anggota berdasarkan village_placement (kawasi, soligi, both)
+    - Image: Foto anggota dengan fallback emoji 👤
+    - Heading: Nama anggota
+    - Info: Role, cluster, prodi, nomor mahasiswa
+    - Section: Heading untuk "Tim Desa Kawasi" dan "Tim Desa Soligi"
+    - Card: Member card dengan foto dan info
+    Styling:
+    - Grid 4 kolom untuk member cards
+    - Card dengan foto di atas dan info di bawah
+    - Border dan shadow untuk setiap card
+    Features:
+    - Auto-grouping berdasarkan village placement
+    - Photo loading dengan fallback
+
+---
+
+15. KKN JURNAL - HALAMAN KALENDER (/kkn/jurnal)
+    Lokasi: app/kkn/jurnal/page.tsx
+    Deskripsi: Menampilkan jurnal KKN dalam format kalender bulan dengan filter desa
+    Komponen:
+    - getKKNJournalsByMonth() query: Fetch jurnal berdasarkan tahun, bulan, desa
+    - CalendarGrid Component: Render kalender grid interaktif
+    - Navigation: Tombol prev/next untuk bulan navigation
+    - Filter: Toggle untuk pilih desa (Kawasi/Soligi/Semua)
+    - Link: Navigation ke detail jurnal per hari
+    - KKNJournalEmptyDay Component: Tampilan hari tanpa jurnal
+    - Card: Jurnal card per hari dengan title snippet
+    Styling: Calendar grid layout, navigation buttons
+    Features:
+    - Month/year navigation (disabled prev jika < Juni 2026, disabled next jika > Agustus 2026)
+    - Village filter (kawasi, soligi, all)
+    - Query params: ?year=2026&month=6&desa=kawasi
+
+---
+
+16. KKN JURNAL - HALAMAN DETAIL (/kkn/jurnal/[slug])
+    Lokasi: app/kkn/jurnal/[slug]/page.tsx
+    Deskripsi: Menampilkan jurnal harian KKN lengkap dengan konten dan cover image
+    Komponen:
+    - getKKNJournalBySlug() query: Fetch jurnal detail
+    - Link: Back link ke /kkn/jurnal
+    - Image: Cover image jurnal
+    - Heading: Judul jurnal
+    - Metadata: Tanggal, lokasi/desa
+    - HTML Content: Konten jurnal (rich text)
+    Styling: Single column article layout
+    Features:
+    - Back navigation
+    - Date dan village display
+    - Rich text content rendering
+
+---
+
+17. KKN PROKER - HALAMAN DAFTAR (/kkn/proker)
+    Lokasi: app/kkn/proker/page.tsx
+    Deskripsi: Menampilkan program kerja dampak KKN dengan filter desa
+    Komponen:
+    - getAllKKNProkers() query: Fetch proker dengan filter desa
+    - Toggle buttons: Filter untuk Semua/Kawasi/Soligi
+    - Link: Navigation ke detail proker
+    - Image: Cover image proker
+    - Card: Proker card dengan judul, desa, deskripsi singkat
+    - Grid layout: 3 kolom responsive
+    Styling: Toggle buttons group, grid cards dengan hover effects
+    Features:
+    - Desa filter toggle (Semua/Kawasi/Soligi)
+    - Query param support (?desa=kawasi)
+    - Impact badge pada menu hub
+
+---
+
+18. KKN PROKER - HALAMAN DETAIL (/kkn/proker/[slug])
+    Lokasi: app/kkn/proker/[slug]/page.tsx
+    Deskripsi: Menampilkan detail program kerja dengan metrics, achievements, dokumentasi
+    Komponen:
+    - getKKNProkerBySlug() query: Fetch proker detail
+    - Link: Back link ke /kkn/proker
+    - Image: Cover image
+    - Heading: Judul program
+    - Metadata: Desa
+    - Description: Short description
+    - Section: Impact metrics (key_achievements)
+    - Section: Key achievements list
+    - Section: Documentation gallery (images atau files)
+    - HTML Content: Detailed content
+    Styling: Article layout dengan sections
+    Features:
+    - Back navigation
+    - Impact metrics display
+    - Key achievements list
+    - Documentation support
+
+---
+
+19. LOGIN PAGE (/login)
+    Lokasi: app/login/page.tsx
+    Deskripsi: Halaman login admin dengan support Google OAuth dan email/password
+    Komponen:
+    - Client component: Form handling
+    - Heading: "🔐 Admin Login"
+    - Form: Email dan password inputs
+    - Button: Login button
+    - Button: Google OAuth login button
+    - Divider: "atau"
+    - Link: Forgot password (if applicable)
+    Styling: Centered card layout dengan shadow dan border
+    Features:
+    - Google OAuth sign-in
+    - Email/password login
+    - Error handling dan alerts
+    - Auto redirect ke /admin pada login sukses
+
+---
+
+===========================================
+ADMIN PAGES - MANAGEMENT DASHBOARD
+===========================================
+
+20. ADMIN DASHBOARD (/admin)
+    Lokasi: app/admin/page.tsx
+    Deskripsi: Dashboard admin utama dengan statistik dan menu manajemen
+    Komponen:
+    - Auth check: Validasi user dan admin role
+    - Stats section: Hitungan berita, budaya, galeri, UMKM
+    - Menu cards: Grid navigasi ke halaman manajemen
+    - Card menu items:
+      * 📰 Manajemen Berita
+      * 🎭 Manajemen Budaya
+      * 📸 Galeri Foto
+      * 🛒 Manajemen UMKM
+      * 🪱 Manajemen Fauna
+      * 🪴 Manajemen Library Toga
+      * 🎒 KKN Hub
+    Styling: Grid menu cards dengan color coding per modul
+    Features:
+    - Role-based access control
+    - Dashboard statistics
+    - Quick navigation ke semua modul
+
+---
+
+21. ADMIN BERITA - DAFTAR (/admin/berita)
+    Lokasi: app/admin/berita/page.tsx
+    Deskripsi: Manajemen berita dengan tabel list dan opsi edit/hapus
+    Komponen:
+    - getAdminUser() check: Validasi user admin
+    - Link: Button "+ Tambah Berita" ke /admin/berita/new
+    - Table:
+      * Columns: Judul, Desa, Tanggal, Aksi
+      * Row actions: Link edit, DeleteButton
+    - DeleteButton Component: Hapus berita dengan konfirmasi
+    Styling: Table dengan thead bg-sand-50, tbody dengan hover effect
+    Features:
+    - Auth protected
+    - Create new news
+    - Edit existing news
+    - Delete news dengan confirmation
+
+---
+
+22. ADMIN BERITA - FORM (/admin/berita/[id])
+    Lokasi: app/admin/berita/[id]/page.tsx
+    Deskripsi: Form tambah/edit berita dengan image upload dan rich text editor
+    Komponen:
+    - Auth check dan redirect
+    - Conditional logic: Jika id="new" maka create form, else edit form
+    - NewsForm Component:
+      * Input: Title, slug, village selector
+      * Image uploader: Thumbnail image
+      * RichTextEditor: Konten berita (rich text)
+      * ExtraImageUploader: Upload hingga 2 gambar tambahan
+      * Submit button: Publish/Update
+    Styling: Form container dengan input styling
+    Features:
+    - Create and edit mode
+    - Image upload to Supabase
+    - Rich text editing
+    - Extra images dengan captions
+    - Auto slug generation
+
+---
+
+23. ADMIN BUDAYA - DAFTAR (/admin/budaya)
+    Lokasi: app/admin/budaya/page.tsx
+    Deskripsi: Manajemen artikel budaya dengan tabel list dan opsi edit/hapus
+    Komponen:
+    - getAdminUser() check
+    - Link: Button "+ Tambah Artikel" ke /admin/budaya/new
+    - Table:
+      * Columns: Judul, Kategori, Tanggal, Aksi
+      * Row actions: Link edit, DeleteButton
+    - DeleteButton Component: Hapus artikel dengan konfirmasi
+    Styling: Sama seperti admin berita
+    Features: Create, read, update, delete culture articles
+
+---
+
+24. ADMIN BUDAYA - FORM (/admin/budaya/[id])
+    Lokasi: app/admin/budaya/[id]/page.tsx
+    Deskripsi: Form tambah/edit artikel budaya
+    Komponen:
+    - Auth check
+    - CultureForm Component:
+      * Input: Title, slug, category selector
+      * Image uploader: Thumbnail
+      * RichTextEditor: Konten artikel
+      * ExtraImageUploader: Gambar tambahan
+      * Submit button: Publish/Update
+    Features: Create, update culture articles dengan media
+
+---
+
+25. ADMIN GALERI - UPLOAD (/admin/galeri)
+    Lokasi: app/admin/galeri/page.tsx
+    Deskripsi: Upload foto untuk galeri
+    Komponen:
+    - Auth check
+    - UploadForm Component (userType="gallery"):
+      * File input: Pilih foto
+      * Input: Title, description, category
+      * Preview: Foto preview
+      * Submit: Upload photo
+    Features: Photo upload ke galleries table
+
+---
+
+26. ADMIN UMKM - DAFTAR (/admin/umkm)
+    Lokasi: app/admin/umkm/page.tsx
+    Deskripsi: Manajemen UMKM dengan tabel list dan opsi edit/hapus
+    Komponen:
+    - getAdminUser() check
+    - Link: Button "+ Tambah UMKM" ke /admin/umkm/new
+    - Table:
+      * Columns: Nama, Jenis Usaha, Desa, Aksi
+      * Row actions: Link edit, DeleteButton
+    Features: UMKM management dengan CRUD operations
+
+---
+
+27. ADMIN UMKM - FORM (/admin/umkm/[id])
+    Lokasi: app/admin/umkm/[id]/page.tsx
+    Deskripsi: Form tambah/edit UMKM dengan produk dan fitur manajemen
+    Komponen:
+    - Auth check
+    - UMKMForm Component:
+      * Input: Nama, slug, business_type
+      * Image uploader: Thumbnail
+      * Textarea: Deskripsi
+      * Gallery uploader: Multiple images (umkm_gallery)
+      * Features input: List fitur/keunggulan
+      * Category selector: Pilih kategori produk
+      * Products section: Add/remove produk per kategori
+      * Contact info: Nomor telepon, lokasi, jam operasional
+      * Submit button
+    Features:
+    - Fetch related data (gallery, features, categories, products)
+    - Complex form dengan relasi database
+    - Product management per UMKM
+
+---
+
+28. ADMIN FAUNA - DAFTAR (/admin/fauna-obi)
+    Lokasi: app/admin/fauna-obi/page.tsx
+    Deskripsi: Manajemen fauna Obi dengan tabel list
+    Komponen:
+    - getAllFauna() query
+    - Link: Button "+ Tambah Fauna" ke /admin/fauna-obi/new
+    - Table:
+      * Columns: Nama Lokal, Nama Ilmiah, Kelas, Status IUCN, Aksi
+      * Row actions: Link edit, DeleteButton
+    Features: Fauna management
+
+---
+29. ADMIN FAUNA - FORM (/admin/fauna-obi/[id])
+    Lokasi: app/admin/fauna-obi/[id]/page.tsx
+    Deskripsi: Form tambah/edit fauna dengan informasi lengkap
+    Komponen:
+    - FaunaForm Component:
+      * Input: name_local, name_scientific, slug
+      * Selectors: class, order_name, family
+      * Input: iucn_status, conservation_notes
+      * Textarea: habitat, diet, behavior, distribution, description, physical_characteristics
+      * Image uploader: Thumbnail
+      * Gallery: Dokumentasi foto
+      * Submit button
+    Features: Fauna detail management
+
+---
+
+30. ADMIN TOGA - DAFTAR (/admin/toga)
+    Lokasi: app/admin/toga/page.tsx
+    Deskripsi: Manajemen tanaman TOGA dengan tabel list
+    Komponen:
+    - getAllTogaPlants() query
+    - Link: Button "+ Tambah Tanaman" ke /admin/toga/new
+    - Table:
+      * Columns: Nama Tanaman, Aksi
+      * Row actions: Link edit, DeleteButton
+    Features: TOGA plant management
+
+---
+
+31. ADMIN TOGA - FORM (/admin/toga/[id])
+    Lokasi: app/admin/toga/[id]/page.tsx
+    Deskripsi: Form tambah/edit tanaman TOGA
+    Komponen:
+    - TogaPlantForm Component:
+      * Input: name_id, name_latin, slug
+      * Textarea: description, health_benefits (JSON array)
+      * Image uploader: Thumbnail
+      * Gallery: Foto tanaman
+      * Recipes: Informasi resep/cara penggunaan (JSON)
+      * Submit button
+    Features: TOGA plant information management
+
+---
+
+32. ADMIN KKN - HUB (/admin/kkn)
+    Lokasi: app/admin/kkn/page.tsx
+    Deskripsi: KKN admin dashboard dengan menu manajemen Tim, Jurnal, Proker
+    Komponen:
+    - Auth check dengan validasi admin role
+    - Stats: Hitungan tim members, jurnal, proker
+    - Menu cards:
+      * 👥 Manajemen Tim
+      * 📖 Manajemen Jurnal
+      * 🚀 Manajemen Program Kerja
+    - Card dengan stats display dan action buttons
+    Styling: Grid menu dengan stats overlay
+    Features: KKN sub-module navigation
+
+---
+
+33. ADMIN KKN TIM - DAFTAR (/admin/kkn/tim)
+    Lokasi: app/admin/kkn/tim/page.tsx
+    Deskripsi: Manajemen anggota tim KKN dengan tabel
+    Komponen:
+    - getAllKKNTeamMembers() query
+    - Link: Button "+ Tambah Anggota" ke /admin/kkn/tim/new
+    - Table:
+      * Columns: Nama, Role-Klaster, Prodi, Desa, Aksi
+      * Row actions: Link edit, DeleteButton
+    Features: Team member CRUD
+
+---
+
+34. ADMIN KKN TIM - FORM (/admin/kkn/tim/[id])
+    Lokasi: app/admin/kkn/tim/[id]/page.tsx
+    Deskripsi: Form tambah/edit anggota tim KKN
+    Komponen:
+    - KKNTeamForm Component:
+      * Input: name, npm/student_id, email
+      * Selectors: role, cluster, study_program, village_placement
+      * Image uploader: Photo
+      * Textareas: Bio, responsibilities
+      * Submit button
+    Features: Team member profile management
+
+---
+
+35 ADMIN KKN JURNAL - DAFTAR (/admin/kkn/jurnal)
+    Lokasi: app/admin/kkn/jurnal/page.tsx
+    Deskripsi: Manajemen jurnal KKN dengan tabel list
+    Komponen:
+    - getKKNJournalsByMonth() query
+    - Navigation: Bulan/tahun selector
+    - Link: Button "+ Tambah Jurnal" ke /admin/kkn/jurnal/new
+    - Table:
+      * Columns: Tanggal, Judul, Desa, Aksi
+      * Row actions: Link edit, DeleteButton
+    Features: Journal management
+
+---
+
+36. ADMIN KKN JURNAL - FORM (/admin/kkn/jurnal/[id])
+    Lokasi: app/admin/kkn/jurnal/[id]/page.tsx
+    Deskripsi: Form tambah/edit jurnal harian KKN
+    Komponen:
+    - KKNJournalForm Component:
+      * Input: title, slug, activity_date
+      * Selector: village_placement
+      * Image uploader: cover_image
+      * RichTextEditor: konten/content
+      * Submit button
+    Features: Journal entry creation/editing
+
+---
+
+37. ADMIN KKN PROKER - DAFTAR (/admin/kkn/proker)
+    Lokasi: app/admin/kkn/proker/page.tsx
+    Deskripsi: Manajemen program kerja KKN dengan tabel list
+    Komponen:
+    - getAllKKNProkers() query
+    - Link: Button "+ Tambah Program" ke /admin/kkn/proker/new
+    - Table:
+      * Columns: Judul, Desa, Aksi
+      * Row actions: Link edit, DeleteButton
+    Features: Program kerja CRUD
+
+---
+
+38. ADMIN KKN PROKER - FORM (/admin/kkn/proker/[id])
+    Lokasi: app/admin/kkn/proker/[id]/page.tsx
+    Deskripsi: Form tambah/edit program kerja
+    Komponen:
+    - KKNProkerForm Component:
+      * Input: title, slug
+      * Selector: village_placement
+      * Textarea: short_description, detailed_description
+      * Image uploader: image_url
+      * JSON fields: impact_metrics, key_achievements
+      * Gallery/Documentation uploader
+      * Submit button
+    Features: Program kerja management dengan metrics
+
+---
+
+===========================================
+SHARED COMPONENTS
+===========================================
+
+LAYOUT COMPONENTS:
+1. Navbar Component (components/layout/Navbar.tsx)
+   - Navigation links ke semua halaman publik
+   - Search functionality (optional)
+   - User auth status display
+   - Admin panel access link
+
+2. Footer Component (components/layout/Footer.tsx)
+   - Quick links
+   - Contact info
+   - Social media links
+   - Copyright info
+
+ADMIN COMPONENTS:
+3. NewsForm (components/admin/NewsForm.tsx)
+   - Form for create/edit news articles
+
+4. CultureForm (components/admin/CultureForm.tsx)
+   - Form for create/edit culture articles
+
+5. UMKMForm (components/admin/UMKMForm.tsx)
+   - Complex form dengan product/category management
+
+6. FaunaForm (components/admin/FaunaForm.tsx)
+   - Fauna information entry form
+
+7. TogaPlantForm (components/admin/TogaPlantForm.tsx)
+   - TOGA plant details form
+
+8. KKNJournalForm (components/admin/KKNJournalForm.tsx)
+   - Journal entry form
+
+9. KKNProkerForm (components/admin/KKNProkerForm.tsx)
+   - Program kerja form
+
+10. KKNTeamForm (components/admin/KKNTeamForm.tsx)
+    - Team member profile form
+
+11. ImageUploader (components/admin/ImageUploader.tsx)
+    - Single image upload component
+
+12. ExtraImageUploader (components/admin/ExtraImageUploader.tsx)
+    - Multiple images upload dengan captions
+
+13. UploadForm (components/admin/UploadForm.tsx)
+    - Generic upload form untuk gallery/media
+
+14. RichTextEditor (components/admin/RichTextEditor.tsx)
+    - Rich text editor untuk konten artikel
+
+15. DeleteButton (components/admin/DeleteButton.tsx)
+    - Delete button component dengan confirmation modal
+
+PUBLIC COMPONENTS:
+16. InteractiveMap (components/kkn/InteractiveMap.tsx)
+    - Interactive map untuk profil wilayah
+
+17. CalendarGrid (components/kkn/CalendarGrid.tsx)
+    - Calendar grid untuk display jurnal KKN
+
+18. KKNJournalEmptyDay (components/kkn/KKNJournalEmptyDay.tsx)
+    - Display untuk hari tanpa jurnal di calendar
+
+===========================================
+DATABASE QUERIES (lib/supabase/queries.ts)
+===========================================
+
+Key Query Functions:
+- getAllNews(): Fetch all news articles
+- getNewsDetail(slug): Fetch single news article
+- getNewsByVillageSlug(desa): Filter news by village
+- getAllCulture(): Fetch all culture articles
+- getCultureDetail(slug): Fetch single culture article
+- getAllUMKM(search?, type?): Fetch UMKM with filter
+- getUMKMBySlug(slug): Fetch single UMKM
+- getAllFauna(): Fetch all fauna
+- getAllTogaPlants(): Fetch all TOGA plants
+- getKKNJournalsByMonth(year, month, villageId?): Group journals by date
+- getKKNJournalBySlug(slug): Fetch single journal
+- getAllKKNProkers(desa?): Fetch proker with optional village filter
+- getKKNProkerBySlug(slug): Fetch single proker
+- getAllKKNTeamMembers(): Fetch all KKN team members
+
+===========================================
+API ROUTES (app/api/)
+===========================================
+
+Authentication:
+- POST /api/auth/login - Email/password login
+- GET /api/auth/logout - User logout
+- GET /api/auth/callback - OAuth callback handler
+
+Content Management:
+- POST/PUT /api/toga/plants - Create/update TOGA plants
+- (More API routes as needed for admin operations)
+
+===========================================
+STYLING & THEME
+===========================================
+
+Colors:
+- Primary: ocean-600 / ocean-800 (untuk headers, buttons)
+- Secondary: tropic-500 / tropic-600 (accent colors)
+- Background: sand-50 / sand-100 (light background)
+- Text: gray-800 (dark text), gray-500 (lighter text)
+
+Typography:
+- Font Inter: Untuk body text
+- Font Playfair Display: Untuk serif headings (h1, h2)
+
+Spacing:
+- Container: max-w-6xl / max-w-7xl dengan px-4 padding
+- Sections: mb-8, mb-12 untuk spacing antar sections
+- Cards: p-4 untuk internal padding
+
+Responsive:
+- Mobile-first approach
+- Breakpoints: md: (768px), lg: (1024px)
+- Grid: 1 kolom mobile, 2-3 kolom tablet/desktop
+
+Effects:
+- Hover: bg-ocean-50, text-ocean-600, shadow-md
+- Transitions: transition, duration-300
+- Shadows: shadow-sm, shadow-md, shadow-xl
+
+Border:
+- Radius: rounded-lg, rounded-xl, rounded-2xl
+- Border: border border-sand-200, border-b-2 border-ocean-600
+
+===========================================
+END OF DOCUMENT
+===========================================

@@ -1,14 +1,163 @@
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+@import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 
-/* Smooth scroll untuk anchor links */
-html {
-  scroll-behavior: smooth;
+@theme {
+  /* Color Palette - Retro Heritage (Oceanic) */
+  --color-background: #fef9f2;
+  --color-surface: #fef9f2;
+  --color-surface-container-low: #f8f3ec;
+  --color-surface-container: #f2ede6;
+  --color-surface-container-high: #ece7e1;
+  --color-surface-container-highest: #e6e2db;
+  --color-surface-dim: #ded9d3;
+  
+  --color-primary: #006689;
+  --color-primary-container: #51b8ea;
+  --color-primary-fixed: #c3e8ff;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #004661;
+  
+  --color-secondary: #5e5e5e;
+  --color-secondary-container: #e2e2e2;
+  
+  --color-tertiary: #ac3231;
+  --color-tertiary-container: #ff8d86;
+  --color-tertiary-fixed: #ffdad7;
+  --color-on-tertiary: #ffffff;
+  
+  --color-on-surface: #1d1c18;
+  --color-on-surface-variant: #3e484e;
+  --color-outline: #6f787f;
+  --color-outline-variant: #bec8d0;
+  
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  
+  /* Legacy colors (backward compatibility) */
+  --color-ocean-50: #f0f9ff;
+  --color-ocean-100: #e0f2fe;
+  --color-ocean-200: #bae6fd;
+  --color-ocean-300: #7dd3fc;
+  --color-ocean-400: #38bdf8;
+  --color-ocean-500: #0ea5e9;
+  --color-ocean-600: #0284c7;
+  --color-ocean-700: #0369a1;
+  --color-ocean-800: #075985;
+  --color-ocean-900: #0c4a6e;
+  
+  --color-sand-50: #fefce8;
+  --color-sand-100: #fef9c3;
+  --color-sand-200: #fef08a;
+  --color-sand-300: #fde047;
+  --color-sand-400: #facc15;
+  --color-sand-500: #eab308;
+  --color-sand-600: #ca8a04;
+  --color-sand-700: #a16207;
+  --color-sand-800: #854d0e;
+  --color-sand-900: #713f12;
+  
+  --color-tropic-50: #f0fdf4;
+  --color-tropic-100: #dcfce7;
+  --color-tropic-200: #bbf7d0;
+  --color-tropic-300: #86efac;
+  --color-tropic-400: #4ade80;
+  --color-tropic-500: #22c55e;
+  --color-tropic-600: #16a34a;
+  --color-tropic-700: #15803d;
+  --color-tropic-800: #166534;
+  --color-tropic-900: #14532d;
+  
+  --color-aged-paper: #f5f0e6;
+  
+  /* Font Size */
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 1.1;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+  
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 1.2;
+  --text-headline-lg--font-weight: 700;
+  
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 1.3;
+  --text-headline-md--font-weight: 600;
+  
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.6;
+  --text-body-lg--font-weight: 400;
+  
+  --text-body-md: 16px;
+  --text-body-md--line-height: 1.6;
+  --text-body-md--font-weight: 400;
+  
+  --text-label-md: 14px;
+  --text-label-md--line-height: 1.2;
+  --text-label-md--letter-spacing: 0.05em;
+  --text-label-md--font-weight: 600;
+  
+  /* Spacing */
+  --spacing-margin: 32px;
+  --spacing-gutter: 24px;
+  
+  /* Border Radius */
+  --radius-xl: 0.75rem;
+  
+  /* Box Shadow */
+  --shadow-hard: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-hard-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-hard-sm: 3px 3px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-hard-primary: 6px 6px 0px 0px rgba(81, 184, 234, 1);
 }
 
-/* Utility class untuk font serif (judul budaya) */
-.font-serif {
-  font-family: var(--font-playfair), serif;
+/* Base styles */
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+    font-family: var(--font-body-md);
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .hard-shadow {
+    box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  }
+  
+  .hard-shadow-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+    transition: all 0.2s ease;
+  }
+  
+  .press-effect:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  }
+  
+  .bg-aged-paper {
+    background-color: #f5f0e6;
+    background-image: url("https://www.transparenttextures.com/patterns/aged-paper.png");
+  }
+  
+  .bg-natural-paper {
+    background-color: #fef9f2;
+    background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+  }
+  
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+  }
 }

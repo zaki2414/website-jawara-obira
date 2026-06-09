@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -21,7 +21,6 @@ export default function TogaPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [plants, setPlants] = useState<Plant[]>([]);
-  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch semua tanaman
@@ -45,16 +44,13 @@ export default function TogaPage() {
     fetchPlants();
   }, []);
 
-  // Set selected plant dari URL param
-  useEffect(() => {
+  const selectedPlant = useMemo(() => {
     const slug = searchParams.get("plant");
     if (slug && plants.length > 0) {
-      const plant = plants.find((p) => p.slug === slug) || null;
-      setSelectedPlant(plant);
-    } else if (plants.length > 0 && !slug) {
-      // Default pilih tanaman pertama
-      setSelectedPlant(plants[0]);
+      return plants.find((p) => p.slug === slug) || null;
     }
+    if (plants.length > 0) return plants[0];
+    return null;
   }, [searchParams, plants]);
 
   const handleSelectPlant = (slug: string) => {
