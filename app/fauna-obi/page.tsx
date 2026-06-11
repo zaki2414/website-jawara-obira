@@ -1,10 +1,11 @@
 // app/fauna-obi/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { Bird, Info, BookOpen, Leaf, Camera, ShieldAlert, Sparkles, HelpCircle } from "lucide-react";
 
 type Fauna = {
   id: string;
@@ -40,23 +41,21 @@ const parseJsonField = (value: any): any[] => {
   return [];
 };
 
-// Warna badge IUCN
-const getIucnColor = (status?: string) => {
-  const colors: Record<string, string> = {
-    LC: "bg-green-100 text-green-800",
-    NT: "bg-yellow-100 text-yellow-800",
-    VU: "bg-orange-100 text-orange-800",
-    EN: "bg-red-100 text-red-800",
-    CR: "bg-red-200 text-red-900",
+const getIucnBrutalistClass = (status?: string) => {
+  const styles: Record<string, string> = {
+    LC: "bg-[#22c55e] text-black border-2 border-on-surface",
+    NT: "bg-[#eab308] text-black border-2 border-on-surface",
+    VU: "bg-[#f97316] text-white border-2 border-on-surface",
+    EN: "bg-[#ef4444] text-white border-2 border-on-surface font-black",
+    CR: "bg-[#7f1d1d] text-white border-2 border-on-surface font-black animate-pulse",
   };
-  return colors[status || ""] || "bg-gray-100 text-gray-800";
+  return styles[status || ""] || "bg-surface-container text-on-surface border border-outline";
 };
 
-export default function FaunaObiPage() {
+function FaunaContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [faunas, setFaunas] = useState<Fauna[]>([]);
-  const [selected, setSelected] = useState<Fauna | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,191 +77,216 @@ export default function FaunaObiPage() {
     fetchFauna();
   }, []);
 
-  useEffect(() => {
-    const slug = searchParams.get("fauna");
-    if (slug && faunas.length > 0) {
-      setSelected(faunas.find((f) => f.slug === slug) || null);
-    } else if (faunas.length > 0 && !slug) {
-      setSelected(faunas[0]);
-    }
-  }, [searchParams, faunas]);
+  // Sinkronisasi data terpilih langsung dari URL saat render (Aman dari ESLint Cascading Render)
+  const slug = searchParams.get("fauna");
+  const selected = faunas.find((f) => f.slug === slug) || faunas[0] || null;
 
-  const handleSelect = (slug: string) => {
-    router.push(`/fauna-obi?fauna=${slug}`, { scroll: false });
+  const handleSelect = (targetSlug: string) => {
+    router.push(`/fauna-obi?fauna=${targetSlug}`, { scroll: false });
   };
 
   const gallery = selected ? parseJsonField(selected.documentations) : [];
 
   return (
-    <div className="flex min-h-screen bg-sand-50">
-      {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-sand-200 p-6 overflow-y-auto fixed h-full">
-        <h2 className="font-serif text-xl font-bold text-ocean-800 mb-6">
-          🦎 Fauna Obi
-        </h2>
-        {loading ? (
-          <p className="text-sm text-gray-500">Memuat...</p>
-        ) : (
-          <ul className="space-y-2">
-            {faunas.map((f) => (
-              <li key={f.id}>
-                <button
-                  onClick={() => handleSelect(f.slug)}
-                  className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
-                    selected?.slug === f.slug
-                      ? "bg-ocean-600 text-ocean-600 shadow-md"
-                      : "bg-sand-50 hover:bg-sand-100 text-gray-700"
-                  }`}
-                >
-                  <div className="font-semibold">{f.name_local}</div>
-                  <div className="text-xs opacity-75 mt-0.5 italic">
-                    {f.name_scientific}
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="flex bg-natural-paper min-h-screen">
+      
+      {/* SIDEBAR NAVIGATION (STAY STICKY & RESPECT FOOTER) */}
+      <aside className="w-80 bg-background border-r-4 border-on-surface p-6 overflow-y-auto sticky top-0 h-screen z-10 flex flex-col justify-between shrink-0">
+        <div>
+          <div className="inline-flex items-center gap-2 bg-secondary text-on-secondary px-3 py-1 text-xs font-bold uppercase tracking-wider border border-on-surface mb-4 hard-shadow-sm">
+            <Bird className="w-3.5 h-3.5" /> Endemisme
+          </div>
+          <h2 className="font-serif text-2xl font-black text-on-surface mb-6 tracking-tight">
+            Fauna Pulau Obi
+          </h2>
+          
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((n) => (
+                <div key={n} className="h-12 bg-surface-container border border-outline-variant rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {faunas.map((f) => {
+                const isSelected = selected?.slug === f.slug;
+                return (
+                  <li key={f.id}>
+                    <button
+                      onClick={() => handleSelect(f.slug)}
+                      className={`w-full text-left p-4 rounded-xl border-2 border-on-surface transition-all duration-150 ${
+                        isSelected
+                          ? "bg-on-surface text-background hard-shadow-sm -translate-x-0.5 -translate-y-0.5"
+                          : "bg-background text-on-surface hover:bg-surface-container-low"
+                      }`}
+                    >
+                      <div className="font-serif font-bold text-base leading-tight">{f.name_local}</div>
+                      <div className={`text-xs mt-1 italic font-medium ${isSelected ? "text-background/80" : "text-on-surface-variant"}`}>
+                        {f.name_scientific}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        
+        <div className="pt-4 border-t border-dashed border-outline-variant text-[10px] uppercase font-bold tracking-wider text-on-surface-variant/60 mt-6">
+          Sistem Informasi Biodiversitas Maluku Utara
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 ml-72 p-8 overflow-y-auto">
+      {/* DETAIL CONTENT PANEL (FLEX AUTO-LAYOUT) */}
+      <main className="flex-1 p-8 md:p-12 bg-aged-paper">
         {selected ? (
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* Header */}
-            <div>
-              <h1 className="text-4xl font-serif font-bold text-ocean-800 mb-2">
+          <div className="max-w-4xl mx-auto space-y-10 animate-fade-in">
+            
+            {/* Header Identitas */}
+            <div className="border-b-4 border-on-surface pb-6 relative">
+              <h1 className="text-4xl md:text-5xl font-serif font-black text-on-surface tracking-tight mb-2">
                 {selected.name_local}
               </h1>
-              <p className="text-xl text-gray-500 italic mb-4">
+              <p className="text-xl font-sans font-medium text-on-surface-variant italic mb-5">
                 {selected.name_scientific}
               </p>
+              
               {selected.iucn_status && (
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${getIucnColor(selected.iucn_status)}`}
-                >
-                  Status IUCN: {selected.iucn_status}
-                </span>
+                <div className="inline-flex items-center gap-2">
+                  <span className={`px-4 py-1.5 rounded-md text-xs font-black uppercase tracking-widest hard-shadow-sm ${getIucnBrutalistClass(selected.iucn_status)}`}>
+                    Status IUCN: {selected.iucn_status}
+                  </span>
+                </div>
               )}
             </div>
 
-            {/* Thumbnail */}
+            {/* Gambar Banner Utama */}
             {selected.thumbnail_url && (
-              <div className="relative w-full h-80 bg-gray-200 rounded-xl overflow-hidden shadow-lg">
+              <div className="relative w-full h-80 md:h-96 border-4 border-on-surface rounded-xl overflow-hidden hard-shadow-lg bg-surface-container-high">
                 <Image
                   src={selected.thumbnail_url}
                   alt={selected.name_local}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  sizes="(max-width: 1200px) 100vw, 800px"
                   priority
                 />
               </div>
             )}
 
-            {/* Info Box (Klasifikasi & Konservasi) */}
-            <section className="bg-white p-6 rounded-xl shadow-sm border border-sand-200">
-              <h2 className="font-serif text-xl font-bold text-ocean-800 mb-4">
-                📋 Informasi Dasar
+            {/* Kotak Klasifikasi */}
+            <section className="bg-background p-6 border-2 border-on-surface rounded-xl hard-shadow-sm space-y-4">
+              <h2 className="font-serif text-xl font-black text-on-surface flex items-center gap-2 border-b border-dashed border-outline-variant pb-2">
+                <Info className="w-5 h-5 text-primary" /> Informasi Dasar & Taksonomi
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm font-sans">
                 {selected.class && (
-                  <div>
-                    <strong>Kelas:</strong> {selected.class}
+                  <div className="bg-surface-container-low p-3 border border-outline rounded-lg">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-0.5">Kelas</span>
+                    <span className="font-bold text-on-surface">{selected.class}</span>
                   </div>
                 )}
                 {selected.order_name && (
-                  <div>
-                    <strong>Ordo:</strong> {selected.order_name}
+                  <div className="bg-surface-container-low p-3 border border-outline rounded-lg">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-0.5">Ordo</span>
+                    <span className="font-bold text-on-surface">{selected.order_name}</span>
                   </div>
                 )}
                 {selected.family && (
-                  <div>
-                    <strong>Famili:</strong> {selected.family}
+                  <div className="bg-surface-container-low p-3 border border-outline rounded-lg">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-0.5">Famili</span>
+                    <span className="font-bold text-on-surface">{selected.family}</span>
                   </div>
                 )}
                 {selected.conservation_notes && (
-                  <div className="md:col-span-2">
-                    <strong>Catatan Konservasi:</strong>{" "}
-                    {selected.conservation_notes}
+                  <div className="sm:col-span-3 bg-tertiary-container/20 p-4 border border-outline rounded-lg mt-2">
+                    <span className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-on-surface mb-1">
+                      <ShieldAlert className="w-3.5 h-3.5 text-error" /> Catatan Konservasi Tambahan
+                    </span>
+                    <p className="text-sm font-medium text-on-surface-variant leading-relaxed">{selected.conservation_notes}</p>
                   </div>
                 )}
               </div>
             </section>
 
-            {/* Description */}
+            {/* Narasi Deskripsi */}
             {selected.description && (
-              <section className="bg-white p-6 rounded-xl shadow-sm border border-sand-200">
-                <h2 className="font-serif text-xl font-bold text-ocean-800 mb-3">
-                  📖 Deskripsi
+              <section className="bg-background p-6 border-2 border-on-surface rounded-xl hard-shadow-sm space-y-3">
+                <h2 className="font-serif text-xl font-black text-on-surface flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" /> Deskripsi Biologis
                 </h2>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                <p className="text-on-surface-variant leading-relaxed font-sans font-medium whitespace-pre-line">
                   {selected.description}
                 </p>
               </section>
             )}
 
-            {/* Physical Characteristics */}
+            {/* Karakteristik Fisik */}
             {selected.physical_characteristics && (
-              <section className="bg-white p-6 rounded-xl shadow-sm border border-sand-200">
-                <h2 className="font-serif text-xl font-bold text-ocean-800 mb-3">
-                  {" "}
-                  Ciri-ciri Fisik
+              <section className="bg-background p-6 border-2 border-on-surface rounded-xl hard-shadow-sm space-y-3">
+                <h2 className="font-serif text-xl font-black text-on-surface flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-secondary" /> Morfologi & Ciri Fisik
                 </h2>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                <p className="text-on-surface-variant leading-relaxed font-sans font-medium whitespace-pre-line">
                   {selected.physical_characteristics}
                 </p>
               </section>
             )}
 
-            {/* Ecology */}
-            <section className="bg-tropic-50 p-6 rounded-xl border border-tropic-200">
-              <h2 className="font-serif text-xl font-bold text-tropic-800 mb-4">
-                🌿 Ekologi & Perilaku
+            {/* Ekologi Lingkungan & Perilaku */}
+            <section className="bg-tropic-50 p-6 border-2 border-tropic-700 rounded-xl hard-shadow-sm space-y-4">
+              <h2 className="font-serif text-xl font-black text-tropic-900 flex items-center gap-2 border-b border-tropic-200 pb-2">
+                <Leaf className="w-5 h-5 text-tropic-700" /> Ekologi, Habitat & Perilaku
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-tropic-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-sans text-tropic-800 font-medium">
                 {selected.habitat && (
-                  <div>
-                    <strong>Habitat:</strong> {selected.habitat}
+                  <div className="bg-background/40 p-3 rounded-lg border border-tropic-200">
+                    <strong className="block text-[10px] uppercase font-black tracking-wide text-tropic-900 mb-1">Habitat Utama:</strong>
+                    {selected.habitat}
                   </div>
                 )}
                 {selected.diet && (
-                  <div>
-                    <strong>Makanan:</strong> {selected.diet}
+                  <div className="bg-background/40 p-3 rounded-lg border border-tropic-200">
+                    <strong className="block text-[10px] uppercase font-black tracking-wide text-tropic-900 mb-1">Rantai Makanan/Diet:</strong>
+                    {selected.diet}
                   </div>
                 )}
                 {selected.behavior && (
-                  <div>
-                    <strong>Perilaku:</strong> {selected.behavior}
+                  <div className="bg-background/40 p-3 rounded-lg border border-tropic-200">
+                    <strong className="block text-[10px] uppercase font-black tracking-wide text-tropic-900 mb-1">Pola Perilaku:</strong>
+                    {selected.behavior}
                   </div>
                 )}
                 {selected.distribution && (
-                  <div className="md:col-span-2">
-                    <strong>Sebaran di Obi:</strong> {selected.distribution}
+                  <div className="md:col-span-2 bg-background/60 p-3 rounded-lg border border-tropic-300 font-bold">
+                    <strong className="block text-[10px] uppercase font-black tracking-wide text-tropic-900 mb-1">Peta Sebaran Ringkas di Kawasan Obi:</strong>
+                    {selected.distribution}
                   </div>
                 )}
               </div>
             </section>
 
-            {/* Gallery */}
+            {/* Galeri Foto Tambahan */}
             {gallery.length > 0 && (
-              <section>
-                <h2 className="font-serif text-xl font-bold text-ocean-800 mb-4">
-                  📸 Galeri Foto
+              <section className="space-y-4">
+                <h2 className="font-serif text-xl font-black text-on-surface flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-primary" /> Koleksi Gambar Dokumentasi Lapangan
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {gallery.map((item: any, i: number) => (
                     <div
                       key={i}
-                      className="relative h-40 bg-gray-200 rounded-lg overflow-hidden"
+                      className="bg-background p-2 border-2 border-on-surface rounded-xl hard-shadow-sm group hover:-translate-y-0.5 transition-transform duration-150"
                     >
-                      <Image
-                        src={item.url}
-                        alt={`${selected.name_local} ${i + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
+                      <div className="relative h-40 bg-surface-container-high rounded-lg overflow-hidden">
+                        <Image
+                          src={item.url}
+                          alt={`${selected.name_local} dokumentasi ${i + 1}`}
+                          fill
+                          className="object-cover group-hover:scale-102 transition-transform duration-200"
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -270,11 +294,26 @@ export default function FaunaObiPage() {
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            {loading ? <p>Memuat data...</p> : <p>Pilih fauna dari sidebar</p>}
+          <div className="flex flex-col items-center justify-center h-full text-on-surface-variant space-y-2 py-20">
+            <HelpCircle className="w-12 h-12 opacity-30 stroke-[1.5]" />
+            <p className="font-serif text-lg font-bold">Tidak Ada Spesimen Terpilih</p>
+            <p className="text-sm">Silakan pilih salah satu entitas taksa fauna pada daftar menu navigasi sebelah kiri.</p>
           </div>
         )}
       </main>
+
     </div>
+  );
+}
+
+export default function FaunaObiPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-natural-paper font-serif font-bold text-on-surface">
+        Menyiapkan Lembar Arsip Fauna...
+      </div>
+    }>
+      <FaunaContent />
+    </Suspense>
   );
 }

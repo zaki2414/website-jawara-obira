@@ -1,65 +1,89 @@
+// app/budaya/page.tsx
 import { getAllCulture } from "@/lib/supabase/queries";
 import Link from "next/link";
 import Image from "next/image";
+import { Sparkles } from "lucide-react";
 
 export const revalidate = 3600;
+
+interface CultureItem {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  thumbnail_url?: string;
+  published_at?: string;
+  villages?: {
+    name: string;
+  };
+}
 
 export default async function CultureCatalog() {
   const { data: culture } = await getAllCulture();
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="font-serif text-3xl font-bold text-ocean-800 mb-2">
-        Katalog Budaya Obi
-      </h1>
-      <p className="text-gray-600 mb-8">
-        Warisan tradisi, kuliner, dan kearifan lokal Pulau Obi.
-      </p>
+    <section className="bg-natural-paper py-16 px-6 border-b-4 border-on-surface min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-12">
+          <div className="inline-block bg-tertiary text-on-tertiary px-4 py-1.5 font-semibold text-sm uppercase tracking-wider mb-4 hard-shadow-sm">
+            Khazanah Lokal
+          </div>
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-on-surface mb-2">
+            Katalog Budaya Obi
+          </h1>
+          <p className="text-on-surface-variant text-lg max-w-2xl">
+            Arsip dokumentasi warisan tradisi, ritus adat, kuliner khas, dan kearifan lokal masyarakat Pulau Obi.
+          </p>
+        </div>
 
-      {/* Grid Grid Artikel Budaya */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {culture?.map((item: any) => (
-          <Link
-            key={item.id}
-            href={`/budaya/${item.slug}`}
-            className="group block bg-white rounded-xl shadow-sm border border-sand-200 overflow-hidden hover:shadow-md transition"
-          >
-            {/* Bagian Gambar / Thumbnail */}
-            <div className="relative h-44 bg-sand-100">
-              {item.thumbnail_url ? (
-                <Image
-                  src={item.thumbnail_url}
-                  alt={item.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-4xl bg-sand-100">
-                  🎭
-                </div>
-              )}
-            </div>
+        {/* Grid Katalog */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {culture?.map((item: CultureItem) => (
+            <Link
+              key={item.id}
+              href={`/budaya/${item.slug}`}
+              className="group block bg-background border-2 border-on-surface rounded-xl overflow-hidden hard-shadow hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition-all"
+            >
+              {/* Thumbnail / Gambar Banner */}
+              <div className="relative h-48 bg-surface-container-high border-b-2 border-on-surface">
+                {item.thumbnail_url ? (
+                  <Image
+                    src={item.thumbnail_url}
+                    alt={item.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-on-surface/30">
+                    <Sparkles className="w-12 h-12" />
+                  </div>
+                )}
+              </div>
 
-            {/* Bagian Teks Info */}
-            <div className="p-4">
-              <span className="text-xs font-semibold text-ocean-600 uppercase bg-ocean-50 px-2 py-1 rounded">
-                {item.category}
-              </span>
-              <h2 className="font-serif text-lg font-bold text-ocean-800 mt-2 group-hover:text-ocean-600 line-clamp-2">
-                {item.title}
-              </h2>
-            </div>
-          </Link>
-        ))}
+              {/* Info Detail Singkat */}
+              <div className="p-6 space-y-3">
+                <span className="inline-block px-2.5 py-1 bg-surface-container border border-outline-variant text-xs font-bold uppercase tracking-wider rounded-md text-on-surface-variant">
+                  {item.category}
+                </span>
+                
+                <h2 className="font-serif text-xl font-bold text-on-surface leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                  {item.title}
+                </h2>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {(!culture || culture.length === 0) && (
+          <div className="text-center bg-background border-2 border-dashed border-outline rounded-xl py-16 hard-shadow-sm">
+            <Sparkles className="w-12 h-12 mx-auto text-on-surface-variant opacity-40 mb-3" />
+            <p className="font-serif text-lg text-on-surface-variant font-medium">Belum ada dokumentasi budaya yang diunggah.</p>
+          </div>
+        )}
       </div>
-
-      {/* State Jika Data Kosong */}
-      {(!culture || culture.length === 0) && (
-        <p className="text-center text-gray-500 py-12">
-          Belum ada dokumentasi budaya.
-        </p>
-      )}
-    </div>
+    </section>
   );
 }

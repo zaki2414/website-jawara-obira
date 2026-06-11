@@ -30,7 +30,6 @@ export default function RootLayout({
     <html lang="id" className={`${inter.variable} ${playfair.variable}`}>
       <body className="flex flex-col min-h-screen">
         <Navbar />
-        {/* 🛠️ PERBAIKAN: Hapus max-w, mx-auto, dan padding di sini agar children bisa full-width */}
         <main className="flex-1">
           {children}
         </main>

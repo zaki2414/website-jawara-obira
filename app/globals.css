@@ -21,10 +21,10 @@
   --color-secondary: #5e5e5e;
   --color-secondary-container: #e2e2e2;
   
-  --color-tertiary: #ac3231;
-  --color-tertiary-container: #ff8d86;
-  --color-tertiary-fixed: #ffdad7;
-  --color-on-tertiary: #ffffff;
+  --color-tertiary: #FEBE00;
+  --color-tertiary-container: #FFDF66;
+  --color-tertiary-fixed: #FFF1CC;
+  --color-on-tertiary: #423A21;
   
   --color-on-surface: #1d1c18;
   --color-on-surface-variant: #3e484e;
@@ -159,5 +159,28 @@
     word-wrap: normal;
     direction: ltr;
     -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .hard-shadow {
+    @apply shadow-lg;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.9);
+  }
+  
+  .hard-shadow-sm {
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+  }
+  
+  .hard-shadow-md {
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.25);
+  }
+  
+  .hard-shadow-lg {
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.3);
+  }
+  
+  .hard-shadow-xl {
+    box-shadow: 12px 12px 0px rgba(0,0,0,0.35);
   }
 }

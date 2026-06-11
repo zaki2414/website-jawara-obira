@@ -1,8 +1,10 @@
-//app/berita/[desa]/[slug]/page.tsx
+// app/berita/[desa]/[slug]/page.tsx
 import { getNewsDetail } from "@/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { formatDate } from "@/lib/utils";
+import { Calendar, User, MapPin, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export const revalidate = 3600;
 
@@ -16,7 +18,7 @@ export default async function NewsDetail({
 }: {
   params: Promise<{ desa: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { desa, slug } = await params;
   const { data: news, error } = await getNewsDetail(slug);
   if (error || !news) return notFound();
 
@@ -24,142 +26,144 @@ export default async function NewsDetail({
   const hasExtraImages = extraImages.length > 0;
 
   return (
-    <article className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      {/* Thumbnail Utama */}
-      {news.thumbnail_url && (
-        <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden mb-8 md:mb-12 shadow-xl">
-          <Image
-            src={news.thumbnail_url}
-            alt={news.title}
-            fill
-            priority
-            className="object-cover"
-          />
-        </div>
-      )}
+    <article className="bg-natural-paper py-12 border-b-4 border-on-surface min-h-screen">
+      <div className="max-w-6xl mx-auto px-6">
+        
+        {/* Navigasi Atas */}
+        <Link href={`/berita/${desa}`} className="inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant hover:text-primary mb-8 group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Berita Desa {desa === "kawasi" ? "Kawasi" : "Soligi"}
+        </Link>
 
-      {/* Kontainer Grid Responsif */}
-      <div className="relative">
-        {/* Desktop Layout: Grid 3 Kolom dengan Gambar Samping */}
-        <div className="hidden md:grid md:grid-cols-12 md:gap-8 md:items-start">
-          {/* Gambar Kiri (Slot 1) - Rotasi -3° */}
-          {extraImages[0]?.url && (
-            <div className="md:col-span-3 md:sticky md:top-24">
-              <div className="relative -rotate-3 hover:rotate-0 transition-transform duration-300">
-                <Image
-                  src={extraImages[0].url}
-                  alt={extraImages[0].caption || "Gambar pendukung"}
-                  width={400}
-                  height={500}
-                  className="rounded-xl shadow-lg"
-                />
+        {/* Cover Thumbnail Utama */}
+        {news.thumbnail_url && (
+          <div className="relative w-full h-64 md:h-112.5 border-4 border-on-surface rounded-xl overflow-hidden mb-12 hard-shadow-lg">
+            <Image
+              src={news.thumbnail_url}
+              alt={news.title}
+              fill
+              priority
+              className="object-cover"
+            />
+          </div>
+        )}
+
+        {/* Layout Grid Artikel */}
+        <div className="relative">
+          {/* == DESKTOP VIEW GRID == */}
+          <div className="hidden md:grid md:grid-cols-12 md:gap-10 md:items-start">
+            
+            {/* Gambar Pendukung Kiri (Slot 1) */}
+            {extraImages[0]?.url ? (
+              <div className="md:col-span-3 md:sticky md:top-24 space-y-2">
+                <div className="bg-background p-2.5 border-2 border-on-surface rounded-xl hard-shadow -rotate-3 hover:rotate-0 transition-all duration-300">
+                  <div className="relative aspect-4/5 w-full overflow-hidden rounded-lg">
+                    <Image
+                      src={extraImages[0].url}
+                      alt={extraImages[0].caption || "Kliping lampiran"}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </div>
                 {extraImages[0].caption && (
-                  <p className="text-xs text-gray-500 mt-3 text-center italic">
+                  <p className="text-xs font-medium text-on-surface-variant text-center italic px-2">
                     {extraImages[0].caption}
                   </p>
                 )}
               </div>
+            ) : <div className="md:col-span-3" />}
+
+            {/* Kolom Teks Inti Utama */}
+            <div className={hasExtraImages ? "md:col-span-6" : "md:col-span-8 md:col-start-3"}>
+              <header className="mb-8 space-y-4">
+                <h1 className="font-serif text-4xl lg:text-5xl font-bold text-on-surface leading-tight">
+                  {news.title}
+                </h1>
+                
+                {/* Meta Bar */}
+                <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant border-b-2 border-dashed border-outline-variant pb-6">
+                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-primary" /> {formatDate(news.published_at)}</span>
+                  <span className="flex items-center gap-1.5"><User className="w-4 h-4 text-tertiary" /> {news.author_name || "Tim Redaksi"}</span>
+                  {news.villages && (
+                    <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-tropic-700" /> {news.villages.name}</span>
+                  )}
+                </div>
+              </header>
+
+              {/* Sanitize/Render HTML Konten */}
+              <div
+                className="prose prose-lg max-w-none font-sans text-on-surface-variant leading-relaxed
+                           prose-headings:font-serif prose-headings:font-bold prose-headings:text-on-surface
+                           prose-p:mb-6 prose-strong:text-on-surface prose-strong:font-bold
+                           prose-a:text-primary prose-a:underline hover:prose-a:text-primary-container"
+                dangerouslySetInnerHTML={{ __html: news.content }}
+              />
             </div>
-          )}
 
-          {/* Teks Utama - Center (Menggunakan Object Mapping untuk mengamankan class Tailwind) */}
-          <div
-            className={
-              hasExtraImages
-                ? "md:col-span-6 md:col-start-4"
-                : "md:col-span-12 md:col-start-1"
-            }
-          >
-            <header className="mb-8">
-              <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-ocean-800 mb-4 leading-tight">
-                {news.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 border-b border-sand-200 pb-6">
-                <span className="flex items-center gap-1">
-                  📅 {formatDate(news.published_at)}
-                </span>
-                <span className="flex items-center gap-1">
-                  ✍️ {news.author_name || "Tim Redaksi"}
-                </span>
-                {news.villages && (
-                  <span className="flex items-center gap-1">
-                    📍 {news.villages.name}
-                  </span>
-                )}
-              </div>
-            </header>
-
-            <div
-              className="prose prose-lg md:prose-xl max-w-none prose-ocean prose-headings:font-serif prose-headings:font-bold prose-a:text-ocean-600 hover:prose-a:text-ocean-700"
-              dangerouslySetInnerHTML={{ __html: news.content }}
-            />
-          </div>
-
-          {/* Gambar Kanan (Slot 2) - Rotasi +3° */}
-          {extraImages[1]?.url && (
-            <div className="md:col-span-3 md:sticky md:top-24">
-              <div className="relative rotate-3 hover:rotate-0 transition-transform duration-300">
-                <Image
-                  src={extraImages[1].url}
-                  alt={extraImages[1].caption || "Gambar pendukung"}
-                  width={400}
-                  height={500}
-                  className="rounded-xl shadow-lg"
-                />
+            {/* Gambar Pendukung Kanan (Slot 2) */}
+            {extraImages[1]?.url ? (
+              <div className="md:col-span-3 md:sticky md:top-24 space-y-2">
+                <div className="bg-background p-2.5 border-2 border-on-surface rounded-xl hard-shadow rotate-3 hover:rotate-0 transition-all duration-300">
+                  <div className="relative aspect-4/5 w-full overflow-hidden rounded-lg">
+                    <Image
+                      src={extraImages[1].url}
+                      alt={extraImages[1].caption || "Kliping lampiran"}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </div>
                 {extraImages[1].caption && (
-                  <p className="text-xs text-gray-500 mt-3 text-center italic">
+                  <p className="text-xs font-medium text-on-surface-variant text-center italic px-2">
                     {extraImages[1].caption}
                   </p>
                 )}
               </div>
-            </div>
-          )}
-        </div>
+            ) : <div className="md:col-span-3" />}
 
-        {/* Mobile Layout: Stack Vertical */}
-        <div className="md:hidden space-y-8">
-          <header className="mb-6">
-            <h1 className="font-serif text-2xl md:text-3xl font-bold text-ocean-800 mb-3">
-              {news.title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-              <span>📅 {formatDate(news.published_at)}</span>
-              <span>✍️ {news.author_name || "Tim Redaksi"}</span>
-            </div>
-          </header>
+          </div>
 
-          <div
-            className="prose prose-base max-w-none"
-            dangerouslySetInnerHTML={{ __html: news.content }}
-          />
+          {/* == MOBILE VIEW ACCORDION (Stack) == */}
+          <div className="md:hidden space-y-6">
+            <header className="space-y-3">
+              <h1 className="font-serif text-3xl font-bold text-on-surface leading-tight">
+                {news.title}
+              </h1>
+              <div className="flex flex-wrap gap-3 text-xs font-bold text-on-surface-variant uppercase">
+                <span>{formatDate(news.published_at)}</span>
+                <span>•</span>
+                <span>By {news.author_name || "Redaksi"}</span>
+              </div>
+            </header>
 
-          {/* Extra Images di bawah (Mobile) dengan tipe data index yang jelas */}
-          {extraImages.map(
-            (img: ExtraImage, index: number) =>
-              img.url && (
-                <div
-                  key={index}
-                  className="bg-white p-3 rounded-xl shadow-sm border border-sand-200"
-                >
-                  <div
-                    className="relative w-full"
-                    style={{ paddingBottom: "75%" }}
-                  >
-                    <Image
-                      src={img.url}
-                      alt={img.caption || "Gambar pendukung"}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
+            <div
+              className="prose prose-base max-w-none text-on-surface-variant leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: news.content }}
+            />
+
+            {/* Galeri Tambahan di bawah khusus Mobile */}
+            {hasExtraImages && (
+              <div className="pt-6 border-t-2 border-dashed border-outline-variant space-y-6">
+                <h4 className="font-serif text-lg font-bold text-on-surface">Gambar Dokumentasi</h4>
+                {extraImages.map((img: ExtraImage, index: number) => img.url && (
+                  <div key={index} className="bg-background p-3 border-2 border-on-surface rounded-xl hard-shadow">
+                    <div className="relative w-full aspect-4/3 overflow-hidden rounded-lg mb-2">
+                      <Image
+                        src={img.url}
+                        alt={img.caption || "Lampiran"}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    {img.caption && (
+                      <p className="text-xs font-medium text-on-surface-variant text-center italic">{img.caption}</p>
+                    )}
                   </div>
-                  {img.caption && (
-                    <p className="text-sm text-gray-600 mt-2 text-center">
-                      {img.caption}
-                    </p>
-                  )}
-                </div>
-              ),
-          )}
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </article>
