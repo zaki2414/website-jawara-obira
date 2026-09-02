@@ -3,29 +3,63 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client"; // ✅ Gunakan browser client untuk mutasi di form
-import { generateSlug } from "@/lib/utils";
+import { generateSlug, formatDate } from "@/lib/utils";
+import { Toast } from "@/components/ui/Toast";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ImageIcon,
+  FileText,
+  Images,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  NotebookPen,
+} from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import ImageUploader from "./ImageUploader";
 import ExtraImageUploader from "./ExtraImageUploader";
+import { getJournalVillageTags, KKN_ACCENT_BORDERS } from "./kkn/kknCardStyles";
+
+type KKNJournalImage = { image_url: string; caption: string | null };
+type KKNJournalVillage = { id: string; name: string; slug: string };
+
+export interface KKNJournalData {
+  id: string;
+  title: string;
+  slug: string;
+  village_slug?: string | null;
+  villages?: { slug: string; name?: string } | null;
+  activity_date: string;
+  content: string;
+  cover_image?: string | null;
+  images?: KKNJournalImage[] | string | null;
+}
 
 type KKNJournalFormProps = {
-  initialData?: any;
+  initialData?: KKNJournalData | null;
   isNew: boolean;
+  // Prefill tanggal saat "Tambah Jurnal" dipicu dari klik tanggal tertentu
+  // di kalender (app/admin/kkn/jurnal -> KKNJournalCalendar.tsx).
+  defaultDate?: string;
 };
 
 export default function KKNJournalForm({
   initialData,
   isNew,
+  defaultDate,
 }: KKNJournalFormProps) {
   const router = useRouter();
 
-  const defaultExtra =
+  const defaultExtra: { url: string; caption: string }[] =
     typeof initialData?.images === "string"
       ? JSON.parse(initialData.images)
-      : initialData?.images?.map((img: any) => ({
+      : initialData?.images?.map((img) => ({
           url: img.image_url,
-          caption: img.caption,
+          caption: img.caption ?? "",
         })) || [];
 
   const [title, setTitle] = useState(initialData?.title || "");
@@ -34,13 +68,13 @@ export default function KKNJournalForm({
     initialData?.village_slug || initialData?.villages?.slug || "",
   );
   const [activityDate, setActivityDate] = useState(
-    initialData?.activity_date ? initialData.activity_date.split("T")[0] : "",
+    initialData?.activity_date ? initialData.activity_date.split("T")[0] : defaultDate || "",
   );
   const [content, setContent] = useState(initialData?.content || "");
   const [coverImage, setCoverImage] = useState(initialData?.cover_image || "");
   const [showSuccess, setShowSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
-  const [villages, setVillages] = useState<any[]>([]);
+  const [villages, setVillages] = useState<KKNJournalVillage[]>([]);
   const [extraImages, setExtraImages] = useState([
     {
       url: defaultExtra[0]?.url || "",
@@ -71,7 +105,8 @@ export default function KKNJournalForm({
       const { data } = await supabase
         .from("villages")
         .select("id, name, slug")
-        .order("name");
+        .order("name")
+        .returns<KKNJournalVillage[]>();
       if (data) setVillages(data);
     };
     fetchVillages();
@@ -162,7 +197,7 @@ export default function KKNJournalForm({
         const { error } = await supabase
           .from("kkn_journals")
           .update(journalPayload)
-          .eq("id", initialData.id);
+          .eq("id", initialData!.id);
         if (error) throw error;
       }
 
@@ -191,7 +226,7 @@ export default function KKNJournalForm({
       }
 
       const successText = `Jurnal KKN berhasil ${isNew ? "dibuat" : "diperbarui"}!`;
-      setMessage({ type: "success", text: `✅ ${successText}` });
+      setMessage({ type: "success", text: successText });
       setShowSuccess(true);
 
       if (isNew) {
@@ -199,170 +234,213 @@ export default function KKNJournalForm({
       } else {
         setTimeout(() => router.push("/admin/kkn/jurnal"), 1500);
       }
-    } catch (err: any) {
-      console.error("❌ Submit error:", err);
-      setMessage({ type: "error", text: `❌ Gagal: ${err.message}` });
+    } catch (err) {
+      const errMessage = err instanceof Error ? err.message : "Terjadi kesalahan tidak dikenal";
+      console.error("Submit error:", err);
+      setMessage({ type: "error", text: `Gagal: ${errMessage}` });
     } finally {
       setLoading(false);
     }
   };
 
+  const selectedVillageName = villages.find((v) => v.slug === village)?.name || null;
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-xl shadow-sm border border-sand-200 space-y-8"
-    >
-      {message && (
-        <div
-          className={`p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      {/* 1. Cover Utama */}
-      <section>
-        <h3 className="font-serif text-lg font-bold text-ocean-800 mb-3">
-          🖼️ Cover Utama Jurnal
-        </h3>
-        <ImageUploader
-          key={`journal-cover-${formKey}`}
-          value={coverImage}
-          onChange={setCoverImage}
-          label="Gambar Cover Jurnal"
-        />
-      </section>
-
-      {/* 2. Metadata Dasar */}
-      <section className="grid md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Judul *
-          </label>
-          {/* ✅ Gunakan handleTitleChange di sini */}
-          <input
-            type="text"
-            value={title}
-            onChange={handleTitleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
-            placeholder="Contoh: Log Harian Hari Ke-14 Pengajaran"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Slug *
-          </label>
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(generateSlug(e.target.value))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500 font-mono text-sm"
-            placeholder="log-harian-hari-ke-14"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tanggal Kegiatan *
-          </label>
-          <input
-            type="date"
-            value={activityDate}
-            onChange={(e) => setActivityDate(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Lokasi Desa *
-          </label>
-          <select
-            value={village}
-            onChange={(e) => setVillage(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-8 rounded-2xl border-2 border-on-surface bg-background p-6 hard-shadow-md lg:col-span-2"
+      >
+        {message && (
+          <div
+            role="alert"
+            className={`flex items-center gap-2 p-3 rounded-lg border-2 text-sm font-bold ${message.type === "success" ? "bg-success/10 text-success border-success/30" : "bg-error-container text-error border-error/30"}`}
           >
-            <option value="">Umum / Kedua Desa</option>
-            {villages.map((v: any) => (
-              <option key={v.id} value={v.slug}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-          {villages.length === 0 && (
-            <p className="text-xs text-gray-400 mt-1">Memuat data desa...</p>
-          )}
-        </div>
-      </section>
+            {message.type === "success" ? (
+              <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            {message.text}
+          </div>
+        )}
 
-      {/* 3. Konten Teks */}
-      <section>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          📝 Isi Cerita Jurnal *
-        </label>
-        <RichTextEditor
-          key={`journal-rte-${formKey}`}
-          content={content}
-          onChange={setContent}
-        />
-      </section>
-
-      {/* 4. Gambar Pendukung */}
-      <section className="border-t border-sand-200 pt-6">
-        <h3 className="font-serif text-lg font-bold text-ocean-800 mb-2">
-          📸 Gambar Pendukung (Opsional)
-        </h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Maks 2 gambar. Posisi & rotasi otomatis: Kiri (-3°) & Kanan (+3°).
-        </p>
-        <div className="grid md:grid-cols-2 gap-6">
-          <ExtraImageUploader
-            key={`journal-extra-0-${formKey}`}
-            slotNumber={1}
-            value={extraImages[0].url}
-            caption={extraImages[0].caption}
-            onChange={(url, caption) => handleExtraImageChange(0, url, caption)}
+        {/* 1. Cover Utama */}
+        <section>
+          <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-3">
+            <ImageIcon className="size-5" aria-hidden="true" />
+            Cover Utama Jurnal
+          </h3>
+          <ImageUploader
+            key={`journal-cover-${formKey}`}
+            value={coverImage}
+            onChange={setCoverImage}
+            label="Gambar Cover Jurnal"
           />
-          <ExtraImageUploader
-            key={`journal-extra-1-${formKey}`}
-            slotNumber={2}
-            value={extraImages[1].url}
-            caption={extraImages[1].caption}
-            onChange={(url, caption) => handleExtraImageChange(1, url, caption)}
-          />
-        </div>
-      </section>
+        </section>
 
-      {/* 5. Aksi */}
-      <div className="flex gap-4 pt-4 border-t border-sand-200">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-3 bg-ocean-600 text-white font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50"
+        {/* 2. Metadata Dasar */}
+        <section className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+              Judul *
+            </label>
+            {/* ✅ Gunakan handleTitleChange di sini */}
+            <input
+              type="text"
+              value={title}
+              onChange={handleTitleChange}
+              className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              placeholder="Contoh: Log Harian Hari Ke-14 Pengajaran"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+              Slug *
+            </label>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(generateSlug(e.target.value))}
+              className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              placeholder="log-harian-hari-ke-14"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+              Tanggal Kegiatan *
+            </label>
+            <input
+              type="date"
+              value={activityDate}
+              onChange={(e) => setActivityDate(e.target.value)}
+              className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+              Lokasi Desa *
+            </label>
+            <select
+              value={village}
+              onChange={(e) => setVillage(e.target.value)}
+              className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            >
+              <option value="">Umum / Kedua Desa</option>
+              {villages.map((v) => (
+                <option key={v.id} value={v.slug}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+            {villages.length === 0 && (
+              <p className="text-xs text-on-surface-variant/60 mt-1">Memuat data desa...</p>
+            )}
+          </div>
+        </section>
+
+        {/* 3. Konten Teks */}
+        <section>
+          <label className="flex items-center gap-2 text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-2">
+            <FileText className="size-4" aria-hidden="true" />
+            Isi Cerita Jurnal *
+          </label>
+          <RichTextEditor
+            key={`journal-rte-${formKey}`}
+            content={content}
+            onChange={setContent}
+          />
+        </section>
+
+        {/* 4. Gambar Pendukung */}
+        <section className="border-t-2 border-dashed border-outline-variant pt-6">
+          <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-2">
+            <Images className="size-5" aria-hidden="true" />
+            Gambar Pendukung (Opsional)
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4">
+            Maks 2 gambar. Posisi & rotasi otomatis: Kiri (-3°) & Kanan (+3°).
+          </p>
+          <div className="grid md:grid-cols-2 gap-6">
+            <ExtraImageUploader
+              key={`journal-extra-0-${formKey}`}
+              slotNumber={1}
+              value={extraImages[0].url}
+              caption={extraImages[0].caption}
+              onChange={(url, caption) => handleExtraImageChange(0, url, caption)}
+            />
+            <ExtraImageUploader
+              key={`journal-extra-1-${formKey}`}
+              slotNumber={2}
+              value={extraImages[1].url}
+              caption={extraImages[1].caption}
+              onChange={(url, caption) => handleExtraImageChange(1, url, caption)}
+            />
+          </div>
+        </section>
+
+        {/* 5. Aksi */}
+        <div className="flex gap-4 pt-4 border-t-2 border-dashed border-outline-variant">
+          <Button type="submit" variant="tertiary" loading={loading}>
+            {!loading && <Save className="size-4" aria-hidden="true" />}
+            {loading ? "Menyimpan..." : isNew ? "Publish Jurnal" : "Simpan Perubahan"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Batal
+          </Button>
+        </div>
+      </form>
+
+      {/* Pratinjau kartu — mencerminkan tampilan roster secara langsung sambil
+          admin mengisi form, dibungkus sticky supaya tetap terlihat saat scroll. */}
+      <div className="lg:col-span-1">
+        <div
+          className={`overflow-hidden rounded-2xl border-4 bg-background hard-shadow-md lg:sticky lg:top-6 ${KKN_ACCENT_BORDERS[0]}`}
         >
-          {loading
-            ? "Menyimpan..."
-            : isNew
-              ? "📤 Publish Jurnal"
-              : "💾 Simpan Perubahan"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-        >
-          Batal
-        </button>
+          <div className="flex items-center gap-2 border-b-2 border-on-surface bg-surface-container-low px-4 py-3">
+            <Eye className="size-4 text-on-surface-variant" aria-hidden="true" />
+            <span className="text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
+              Pratinjau Kartu
+            </span>
+          </div>
+
+          <div className="relative h-48 border-b-2 border-on-surface bg-surface-container-high">
+            {coverImage ? (
+              <Image
+                src={coverImage}
+                alt={title || "Pratinjau cover jurnal"}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-on-surface-variant/40">
+                <NotebookPen className="size-14 stroke-[1.25]" aria-hidden="true" />
+              </div>
+            )}
+            <div className="absolute right-2 top-2 flex flex-wrap justify-end gap-1.5">
+              {getJournalVillageTags(selectedVillageName).map((tag) => (
+                <Badge key={tag} variant="solid-outline">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1 p-4">
+            <h3 className="font-serif text-lg font-black leading-snug text-on-surface">
+              {title || "Judul Jurnal"}
+            </h3>
+            <p className="text-sm font-bold uppercase tracking-wide text-primary">
+              {activityDate ? formatDate(activityDate, { month: "short" }) : "Tanggal Kegiatan"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Toast Pop-up Success */}
-      {showSuccess && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up flex items-center gap-2">
-          <span>✅</span>
-          <span>Jurnal berhasil {isNew ? "dibuat" : "diperbarui"}!</span>
-        </div>
-      )}
-    </form>
+      <Toast show={showSuccess} message={`Jurnal berhasil ${isNew ? "dibuat" : "diperbarui"}!`} />
+    </div>
   );
 }

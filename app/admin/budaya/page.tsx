@@ -1,9 +1,13 @@
 // app/admin/budaya/page.tsx
 import { getAdminUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getAllCulture } from "@/lib/supabase/queries";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import DeleteButton from "@/components/admin/DeleteButton";
+import { AlertTriangle, Landmark, Plus } from "lucide-react";
+import { BudayaSectionBanner } from "@/components/admin/budaya/BudayaSectionBanner";
+import {
+  AdminCultureCard,
+  type AdminCultureCardData,
+} from "@/components/admin/budaya/AdminCultureCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,86 +16,49 @@ export default async function AdminCultureList() {
   const user = await getAdminUser();
   if (!user) redirect("/login");
 
-  const supabase = await createClient();
-  const { data: culture } = await supabase
-    .from("culture_articles")
-    .select("id, title, slug, category, published_at")
-    .order("published_at", { ascending: false });
+  const { data, error } = await getAllCulture();
+  const culture = data as unknown as AdminCultureCardData[] | null;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="font-serif text-2xl font-bold text-ocean-800">
-          🎭 Manajemen Budaya
-        </h1>
-        <Link
-          href="/admin/budaya/new"
-          className="px-4 py-2 bg-tropic-500 text-black rounded-lg hover:bg-tropic-600 transition"
-        >
-          + Tambah Artikel
-        </Link>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <BudayaSectionBanner
+          crumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Budaya" }]}
+          title="Manajemen Budaya"
+          subtitle="Kelola artikel budaya & kearifan lokal Pulau Obi."
+          badgeLabel="Budaya"
+          badgeIcon={Landmark}
+          action={{ href: "/admin/budaya/new", label: "Tambah Artikel", icon: Plus }}
+        />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-sand-200 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-sand-50 border-b border-sand-200">
-            <tr>
-              <th className="p-4 font-medium text-gray-600">Judul</th>
-              <th className="p-4 font-medium text-gray-600">Kategori</th>
-              <th className="p-4 font-medium text-gray-600">Tanggal</th>
-              <th className="p-4 font-medium text-gray-600 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-sand-100">
-            {culture?.map((item: any) => (
-              <tr key={item.id} className="hover:bg-sand-50">
-                <td className="p-4">
-                  <Link
-                    href={`/budaya/${item.slug}`}
-                    className="text-ocean-600 hover:underline font-medium"
-                  >
-                    {item.title}
-                  </Link>
-                </td>
-                <td className="p-4">
-                  <span className="px-2 py-1 bg-ocean-50 text-ocean-700 text-sm rounded-full">
-                    {item.category}
-                  </span>
-                </td>
-                <td className="p-4 text-gray-500 text-sm">
-                  {formatDate(item.published_at)}
-                </td>
-                <td className="p-4 text-right space-x-2">
-                  <Link
-                    href={`/admin/budaya/${item.id}`}
-                    className="text-tropic-600 hover:text-tropic-700 text-sm font-medium"
-                  >
-                    Edit
-                  </Link>
-                  <DeleteButton
-                    table="culture_articles"
-                    id={item.id}
-                    title={item.title}
-                  />
-                </td>
-              </tr>
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl border-2 border-error bg-error/10 p-4 font-bold text-error">
+            <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
+            Gagal memuat data artikel budaya. Muat ulang halaman untuk mencoba lagi.
+          </div>
+        ) : !culture || culture.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-on-surface bg-background p-12 text-center hard-shadow-sm">
+            <span className="inline-flex rounded-xl border-2 border-on-surface bg-primary-container text-on-primary-container p-3">
+              <Landmark className="size-6" aria-hidden="true" />
+            </span>
+            <p className="font-serif text-lg font-black text-on-surface">
+              Belum Ada Artikel Budaya
+            </p>
+            <p className="max-w-sm text-sm text-on-surface-variant">
+              Tambahkan artikel budaya &amp; kearifan lokal untuk mulai menampilkannya di
+              halaman ini dan situs publik.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {culture.map((item, index) => (
+              <AdminCultureCard key={item.id} item={item} index={index} />
             ))}
-          </tbody>
-        </table>
-        {(!culture || culture.length === 0) && (
-          <p className="p-6 text-center text-gray-500">
-            Belum ada artikel budaya.
-          </p>
+          </div>
         )}
       </div>
-    </div>
+    </main>
   );
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }

@@ -1,8 +1,10 @@
 // app/admin/budaya/[id]/page.tsx
 import { getAdminUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getCultureById } from "@/lib/supabase/queries";
 import { redirect, notFound } from "next/navigation";
-import CultureForm from "@/components/admin/CultureForm";
+import { ArrowLeft, PenSquare, PlusCircle } from "lucide-react";
+import { BudayaSectionBanner } from "@/components/admin/budaya/BudayaSectionBanner";
+import CultureForm, { type CultureRecord } from "@/components/admin/CultureForm";
 
 export default async function AdminCultureFormPage({
   params,
@@ -15,29 +17,42 @@ export default async function AdminCultureFormPage({
   const { id } = await params;
   const isNew = id === "new";
 
-  let initialData = null;
+  let initialData: CultureRecord | null = null;
   if (!isNew) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("culture_articles")
-      .select("*, villages(slug)")
-      .eq("id", id)
-      .single();
-
+    const { data, error } = await getCultureById(id);
     if (error || !data) return notFound();
 
+    const record = data as unknown as CultureRecord;
     initialData = {
-      ...data,
-      village_slug: data.villages?.slug || "",
+      ...record,
+      village_slug: record.villages?.slug || "",
     };
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="font-serif text-2xl font-bold text-ocean-800 mb-6">
-        {isNew ? "🎭 Tambah Artikel Budaya" : "✏️ Edit Artikel Budaya"}
-      </h1>
-      <CultureForm initialData={initialData} isNew={isNew} />
-    </div>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <BudayaSectionBanner
+          crumbs={[
+            { label: "Dashboard", href: "/admin" },
+            { label: "Budaya", href: "/admin/budaya" },
+            { label: isNew ? "Tambah" : "Edit" },
+          ]}
+          title={isNew ? "Tambah Artikel Budaya" : "Edit Artikel Budaya"}
+          subtitle={
+            isNew
+              ? "Dokumentasikan tradisi, kuliner, atau kearifan lokal baru Pulau Obi."
+              : `Perbarui detail artikel "${initialData?.title ?? "ini"}".`
+          }
+          badgeLabel="Budaya"
+          badgeIcon={isNew ? PlusCircle : PenSquare}
+          action={{ href: "/admin/budaya", label: "Budaya", icon: ArrowLeft }}
+        />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <CultureForm initialData={initialData} isNew={isNew} />
+      </div>
+    </main>
   );
 }

@@ -6,18 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { Menu, X, ShieldAlert } from "lucide-react";
-
-const navLinks = [
-  { href: "/", label: "Beranda" },
-  { href: "/profil", label: "Profil" },
-  { href: "/berita", label: "Berita" },
-  { href: "/budaya", label: "Budaya" },
-  { href: "/galeri", label: "Galeri" },
-  { href: "/umkm", label: "UMKM" },
-  { href: "/fauna-obi", label: "Fauna Obi" },
-  { href: "/toga", label: "Toga" },
-  { href: "/kkn", label: "Tim Kami" },
-];
+import { NAV_LINKS } from "@/constants/nav";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -78,7 +67,7 @@ export default function Navbar() {
 
           {/* DESKTOP NAVIGATION LINKS */}
           <div className="hidden md:flex items-center gap-1.5">
-            {navLinks.map((link) => {
+            {NAV_LINKS.map((link) => {
               const isActive =
                 pathname === link.href || pathname?.startsWith(`${link.href}/`);
               return (
@@ -100,7 +89,7 @@ export default function Navbar() {
             {isAdmin && (
               <Link
                 href="/admin"
-                className="ml-2 px-3.5 py-2 bg-[#ef4444] text-white text-xs font-black uppercase tracking-wider rounded-xl border-2 border-on-surface hard-shadow-sm hover:-translate-x-px hover:-translate-y-px hover:hard-shadow-md active:translate-x-0 active:translate-y-0 transition-all duration-150 flex items-center gap-1.5"
+                className="ml-2 px-3.5 py-2 bg-error text-on-error text-xs font-black uppercase tracking-wider rounded-xl border-2 border-on-surface hard-shadow-sm hover:-translate-x-px hover:-translate-y-px hover:hard-shadow-md active:translate-x-0 active:translate-y-0 transition-all duration-150 flex items-center gap-1.5"
               >
                 <ShieldAlert className="w-4 h-4" /> Admin
               </Link>
@@ -120,7 +109,7 @@ export default function Navbar() {
         {/* MOBILE NAVIGATION DROPDOWN OVERLAY */}
         {open && (
           <div className="md:hidden py-4 border-t-2 border-dashed border-outline-variant space-y-1.5 bg-background mb-2">
-            {navLinks.map((link) => {
+            {NAV_LINKS.map((link) => {
               const isActive =
                 pathname === link.href || pathname?.startsWith(`${link.href}/`);
               return (
@@ -142,7 +131,7 @@ export default function Navbar() {
             {isAdmin && (
               <Link
                 href="/admin"
-                className="block mx-2 mt-4 px-4 py-3.5 bg-[#ef4444] text-white text-center font-black uppercase tracking-widest text-xs rounded-xl border-2 border-on-surface hard-shadow-sm"
+                className="block mx-2 mt-4 px-4 py-3.5 bg-error text-on-error text-center font-black uppercase tracking-widest text-xs rounded-xl border-2 border-on-surface hard-shadow-sm"
                 onClick={() => setOpen(false)}
               >
                 Masuk Panel Admin

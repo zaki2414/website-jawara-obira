@@ -4,9 +4,23 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Trash2, Check, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+type DeleteableTable =
+  | "news"
+  | "culture_articles"
+  | "galleries"
+  | "kkn_documentations"
+  | "kkn_members"
+  | "kkn_journals"
+  | "kkn_prokers"
+  | "toga_plants"
+  | "fauna_obi"
+  | "umkm";
 
 type DeleteButtonProps = {
-  table: "news" | "culture_articles" | "galleries" | "kkn_documentations" | "kkn_members" | "kkn_journals" | "kkn_prokers" | "toga_plants" | "fauna_obi";
+  table: DeleteableTable;
   id: string;
   title: string;
   redirectAfter?: string;
@@ -23,13 +37,8 @@ export default function DeleteButton({
   const router = useRouter();
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        `Yakin ingin menghapus "${title}"? Tindakan ini tidak dapat dibatalkan.`,
-      )
-    )
-      return;
-
+    // Konfirmasi sudah ditangani oleh state `confirming` (langkah "Ya, Hapus" / "Batal"
+    // di bawah) — jangan tambah confirm() browser lagi di sini, dobel konfirmasi.
     setLoading(true);
     try {
       const supabase = createClient();
@@ -38,8 +47,9 @@ export default function DeleteButton({
 
       if (redirectAfter) router.push(redirectAfter);
       else router.refresh();
-    } catch (err: any) {
-      alert(`Gagal menghapus: ${err.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Terjadi kesalahan tidak dikenal";
+      alert(`Gagal menghapus: ${message}`);
     } finally {
       setLoading(false);
       setConfirming(false);
@@ -48,30 +58,38 @@ export default function DeleteButton({
 
   if (confirming) {
     return (
-      <span className="inline-flex items-center gap-2 text-red-600 text-sm">
-        <button
+      <span className="inline-flex items-center gap-2">
+        <span className="hidden sm:inline text-label-sm text-on-surface-variant truncate max-w-40">
+          Hapus &ldquo;{title}&rdquo;?
+        </span>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
           onClick={handleDelete}
-          disabled={loading}
-          className="font-medium hover:underline disabled:opacity-50"
+          loading={loading}
         >
-          {loading ? "Menghapus..." : "Ya, Hapus"}
-        </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="text-gray-500 hover:text-gray-700"
-        >
+          {!loading && <Check className="size-3.5" aria-hidden="true" />}
+          Ya, Hapus
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+          <X className="size-3.5" aria-hidden="true" />
           Batal
-        </button>
+        </Button>
       </span>
     );
   }
 
   return (
-    <button
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
       onClick={() => setConfirming(true)}
-      className="text-red-600 hover:text-red-700 text-sm font-medium"
+      className="text-error hover:text-error hover:bg-error-container/20"
     >
+      <Trash2 className="size-3.5" aria-hidden="true" />
       Hapus
-    </button>
+    </Button>
   );
 }

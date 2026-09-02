@@ -1,8 +1,10 @@
 // app/admin/berita/[id]/page.tsx
 import { getAdminUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getNewsById } from "@/lib/supabase/queries";
 import { redirect, notFound } from "next/navigation";
-import NewsForm from "@/components/admin/NewsForm";
+import { ArrowLeft, PenSquare, PlusCircle } from "lucide-react";
+import { BeritaSectionBanner } from "@/components/admin/berita/BeritaSectionBanner";
+import NewsForm, { type NewsRecord } from "@/components/admin/NewsForm";
 
 export default async function AdminNewsFormPage({
   params,
@@ -15,24 +17,38 @@ export default async function AdminNewsFormPage({
   const { id } = await params;
   const isNew = id === "new";
 
-  let initialData = null;
+  let initialData: NewsRecord | null = null;
   if (!isNew) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("news")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await getNewsById(id);
     if (error || !data) return notFound();
-    initialData = data;
+
+    initialData = data as unknown as NewsRecord;
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="font-serif text-2xl font-bold text-ocean-800 mb-6">
-        {isNew ? "📝 Tambah Artikel Berita" : "✏️ Edit Artikel Berita"}
-      </h1>
-      <NewsForm initialData={initialData} isNew={isNew} />
-    </div>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <BeritaSectionBanner
+          crumbs={[
+            { label: "Dashboard", href: "/admin" },
+            { label: "Berita", href: "/admin/berita" },
+            { label: isNew ? "Tambah" : "Edit" },
+          ]}
+          title={isNew ? "Tambah Artikel Berita" : "Edit Artikel Berita"}
+          subtitle={
+            isNew
+              ? "Publikasikan kabar terbaru dari desa Kawasi & Soligi."
+              : `Perbarui detail artikel "${initialData?.title ?? "ini"}".`
+          }
+          badgeLabel="Berita"
+          badgeIcon={isNew ? PlusCircle : PenSquare}
+          action={{ href: "/admin/berita", label: "Berita", icon: ArrowLeft }}
+        />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <NewsForm initialData={initialData} isNew={isNew} />
+      </div>
+    </main>
   );
 }

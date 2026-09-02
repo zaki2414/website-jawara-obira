@@ -1,9 +1,10 @@
 // app/admin/berita/page.tsx
 import { getAdminUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getAllNews } from "@/lib/supabase/queries";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import DeleteButton from "@/components/admin/DeleteButton";
+import { AlertTriangle, Newspaper, Plus } from "lucide-react";
+import { BeritaSectionBanner } from "@/components/admin/berita/BeritaSectionBanner";
+import { AdminBeritaCard, type AdminBeritaCardData } from "@/components/admin/berita/AdminBeritaCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,76 +13,47 @@ export default async function AdminNewsList() {
   const user = await getAdminUser();
   if (!user) redirect("/login");
 
-  const supabase = await createClient();
-  const { data: news } = await supabase
-    .from("news")
-    .select("id, title, slug, villages(name), published_at")
-    .order("published_at", { ascending: false });
+  const { data, error } = await getAllNews();
+  const news = data as unknown as AdminBeritaCardData[] | null;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="font-serif text-2xl font-bold text-ocean-800">
-          📰 Manajemen Berita
-        </h1>
-        <Link
-          href="/admin/berita/new"
-          className="px-4 py-2 bg-ocean-600 text-black rounded-lg hover:bg-ocean-700 transition"
-        >
-          + Tambah Berita
-        </Link>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <BeritaSectionBanner
+          crumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Berita" }]}
+          title="Manajemen Berita"
+          subtitle="Kelola artikel berita desa Kawasi & Soligi."
+          badgeLabel="Berita"
+          badgeIcon={Newspaper}
+          action={{ href: "/admin/berita/new", label: "Tambah Berita", icon: Plus }}
+        />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-sand-200 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-sand-50 border-b border-sand-200">
-            <tr>
-              <th className="p-4 font-medium text-gray-600">Judul</th>
-              <th className="p-4 font-medium text-gray-600">Desa</th>
-              <th className="p-4 font-medium text-gray-600">Tanggal</th>
-              <th className="p-4 font-medium text-gray-600 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-sand-100">
-            {news?.map((item: any) => (
-              <tr key={item.id} className="hover:bg-sand-50">
-                <td className="p-4">
-                  <Link
-                    href={`/berita/${item.villages?.slug || "kawasi"}/${item.slug}`}
-                    className="text-ocean-600 hover:underline font-medium"
-                  >
-                    {item.title}
-                  </Link>
-                </td>
-                <td className="p-4 text-gray-600">{item.villages?.name}</td>
-                <td className="p-4 text-gray-500 text-sm">
-                  {formatDate(item.published_at)}
-                </td>
-                <td className="p-4 text-right space-x-2">
-                  <Link
-                    href={`/admin/berita/${item.id}`}
-                    className="text-tropic-600 hover:text-tropic-700 text-sm font-medium"
-                  >
-                    Edit
-                  </Link>
-                  <DeleteButton table="news" id={item.id} title={item.title} />
-                </td>
-              </tr>
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl border-2 border-error bg-error/10 p-4 font-bold text-error">
+            <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
+            Gagal memuat data berita. Muat ulang halaman untuk mencoba lagi.
+          </div>
+        ) : !news || news.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-on-surface bg-background p-12 text-center hard-shadow-sm">
+            <span className="inline-flex rounded-xl border-2 border-on-surface bg-cream-container text-on-cream p-3">
+              <Newspaper className="size-6" aria-hidden="true" />
+            </span>
+            <p className="font-serif text-lg font-black text-on-surface">Belum Ada Berita</p>
+            <p className="max-w-sm text-sm text-on-surface-variant">
+              Tambahkan artikel berita untuk mulai menampilkannya di halaman ini dan situs
+              publik.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {news.map((item, index) => (
+              <AdminBeritaCard key={item.id} item={item} index={index} />
             ))}
-          </tbody>
-        </table>
-        {(!news || news.length === 0) && (
-          <p className="p-6 text-center text-gray-500">Belum ada berita.</p>
+          </div>
         )}
       </div>
-    </div>
+    </main>
   );
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }

@@ -1,27 +1,36 @@
-// app/profil/page.tsx
-import InteractiveMap from "@/components/kkn/InteractiveMap";
+import { HeroSection, ProfilFadeIn, VillageExplorer } from "@/components/profil";
+import { BackgroundOrnaments } from "@/components/shared/BackgroundOrnaments";
+import { getMapFacilities, getMapBuildingOverrides, getUMKMMapPins, getAllVillages } from "@/lib/supabase/queries";
+import { mergeVillageContent } from "@/constants/profil";
+import type { MapFacility, MapBuildingOverride } from "@/constants/peta";
 
-export default function ProfilPage() {
+export const revalidate = 3600;
+
+export default async function ProfilPage() {
+  const [{ data: facilitiesData }, { data: buildingOverridesData }, { data: umkmPinsData }, { data: villagesData }] =
+    await Promise.all([
+      getMapFacilities(),
+      getMapBuildingOverrides(),
+      getUMKMMapPins(),
+      getAllVillages(),
+    ]);
+  const facilities = (facilitiesData ?? []) as MapFacility[];
+  const buildingOverrides = (buildingOverridesData ?? []) as MapBuildingOverride[];
+  const umkmPins = umkmPinsData ?? [];
+  const villages = mergeVillageContent(villagesData ?? []);
+
   return (
-    <main className="min-h-screen bg-natural-paper py-16 px-6 border-b-4 border-on-surface">
-      <div className="max-w-6xl mx-auto">
-        {/* Header Halaman */}
-        <div className="text-center mb-16">
-          <div className="inline-block bg-primary text-on-primary px-4 py-1.5 font-semibold text-sm uppercase tracking-wider mb-4 hard-shadow-sm">
-            Eksplorasi Wilayah
-          </div>
-          <h1 className="font-serif text-5xl md:text-6xl font-bold text-on-surface mb-4">
-            Profil Wilayah <span className="italic text-primary">Obira</span>
-          </h1>
-          <p className="text-on-surface-variant max-w-2xl mx-auto text-lg md:text-xl leading-relaxed">
-            Jelajahi potensi, demografi, dan kearifan lokal Desa Kawasi dan Desa
-            Soligi melalui peta interaktif di bawah ini.
-          </p>
-        </div>
+    <ProfilFadeIn>
+      <BackgroundOrnaments />
+      {/* Hero Section dengan Atlas Background */}
+      <HeroSection />
 
-        {/* Render Komponen Peta Interaktif */}
-        <InteractiveMap />
-      </div>
-    </main>
+      <VillageExplorer
+        facilities={facilities}
+        buildingOverrides={buildingOverrides}
+        umkmPins={umkmPins}
+        villages={villages}
+      />
+    </ProfilFadeIn>
   );
 }

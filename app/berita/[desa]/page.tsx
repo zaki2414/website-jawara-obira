@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Calendar, User, Newspaper, ArrowLeft } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { BeritaPageBackground } from "@/components/berita/BeritaPageBackground";
 
 export const revalidate = 3600;
 
@@ -30,8 +32,10 @@ export default async function VillageNews({
   const accentColor = isKawasi ? "text-primary" : "text-tropic-700";
 
   return (
-    <section className="bg-aged-paper py-16 px-6 border-b-4 border-on-surface min-h-screen">
-      <div className="max-w-4xl mx-auto">
+    <section className="relative bg-aged-paper py-16 px-6 border-b-4 border-on-surface min-h-screen overflow-hidden">
+      <BeritaPageBackground />
+
+      <div className="relative max-w-4xl mx-auto z-10">
         {/* Tombol Kembali */}
         <Link href="/berita" className="inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant hover:text-primary mb-6 group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Kembali ke Semua Berita
@@ -102,10 +106,3 @@ export default async function VillageNews({
   );
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}

@@ -3,6 +3,8 @@ import { getAllNews } from "@/lib/supabase/queries";
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, Newspaper } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { BeritaPageBackground } from "@/components/berita/BeritaPageBackground";
 
 export const revalidate = 3600;
 
@@ -22,8 +24,10 @@ export default async function NewsFeed() {
   const { data: news } = await getAllNews();
 
   return (
-    <section className="bg-natural-paper py-16 px-6 border-b-4 border-on-surface min-h-screen">
-      <div className="max-w-6xl mx-auto">
+    <section className="relative bg-natural-paper py-16 px-6 border-b-4 border-on-surface min-h-screen overflow-hidden">
+      <BeritaPageBackground />
+
+      <div className="relative max-w-6xl mx-auto z-10">
         {/* Header */}
         <div className="mb-12">
           <div className="inline-block bg-primary text-on-primary px-4 py-1.5 font-semibold text-sm uppercase tracking-wider mb-4 hard-shadow-sm">
@@ -36,7 +40,9 @@ export default async function NewsFeed() {
 
         {/* Grid Kliping Berita */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {news?.map((item: NewsItem) => {
+          {/* getAllNews() tidak pakai generated Supabase types, jadi relasi villages()
+              disimpulkan sebagai array meski secara runtime selalu objek tunggal. */}
+          {(news as unknown as NewsItem[] | null)?.map((item: NewsItem) => {
             const isKawasi = item.villages?.slug === "kawasi";
             const badgeColor = isKawasi 
               ? "bg-ocean-100 text-ocean-700 border-ocean-700" 
@@ -97,10 +103,3 @@ export default async function NewsFeed() {
   );
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}

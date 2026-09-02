@@ -1,7 +1,9 @@
 import { getAdminUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getUMKMById } from "@/lib/supabase/queries";
 import { redirect, notFound } from "next/navigation";
-import UMKMForm from "@/components/admin/UMKMForm";
+import { ArrowLeft, PenSquare, PlusCircle } from "lucide-react";
+import { UMKMSectionBanner } from "@/components/admin/umkm/UMKMSectionBanner";
+import UMKMForm, { type UMKMFormInitialData } from "@/components/admin/UMKMForm";
 
 export default async function AdminUMKMFormPage({
   params,
@@ -14,50 +16,38 @@ export default async function AdminUMKMFormPage({
   const { id } = await params;
   const isNew = id === "new";
 
-  let initialData: any = null;
+  let initialData: UMKMFormInitialData | null = null;
   if (!isNew) {
-    const supabase = await createClient();
-    // Fetch main data
-    const { data: umkm } = await supabase
-      .from("umkm")
-      .select("*")
-      .eq("id", id)
-      .single();
-    if (!umkm) return notFound();
+    const { data, error } = await getUMKMById(id);
+    if (error || !data) return notFound();
 
-    // Fetch relations
-    const { data: gallery } = await supabase
-      .from("umkm_gallery")
-      .select("*")
-      .eq("umkm_id", id);
-    const { data: features } = await supabase
-      .from("umkm_features")
-      .select("feature")
-      .eq("umkm_id", id);
-    const { data: categories } = await supabase
-      .from("umkm_category_items")
-      .select("category_id")
-      .eq("umkm_id", id);
-    const { data: products } = await supabase
-      .from("umkm_products")
-      .select("item_name, category_id")
-      .eq("umkm_id", id);
-
-    initialData = {
-      ...umkm,
-      gallery,
-      features: features?.map((f) => f.feature) || [],
-      categories,
-      products,
-    };
+    initialData = data as unknown as UMKMFormInitialData;
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="font-serif text-2xl font-bold text-ocean-800 mb-6">
-        {isNew ? " Tambah UMKM Baru" : "✏️ Edit UMKM"}
-      </h1>
-      <UMKMForm initialData={initialData} isNew={isNew} />
-    </div>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <UMKMSectionBanner
+          crumbs={[
+            { label: "Dashboard", href: "/admin" },
+            { label: "UMKM", href: "/admin/umkm" },
+            { label: isNew ? "Tambah" : "Edit" },
+          ]}
+          title={isNew ? "Tambah UMKM Baru" : "Edit UMKM"}
+          subtitle={
+            isNew
+              ? "Daftarkan usaha mikro, kecil, atau menengah baru ke direktori."
+              : `Perbarui detail, galeri, dan daftar produk "${initialData?.name ?? "usaha ini"}".`
+          }
+          badgeLabel="UMKM"
+          badgeIcon={isNew ? PlusCircle : PenSquare}
+          action={{ href: "/admin/umkm", label: "UMKM", icon: ArrowLeft }}
+        />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <UMKMForm initialData={initialData} isNew={isNew} />
+      </div>
+    </main>
   );
 }

@@ -1,68 +1,59 @@
 // app/admin/kkn/proker/page.tsx
-import { getAllKKNProkers } from "@/lib/supabase/queries";
-import Link from "next/link";
-import DeleteButton from "@/components/admin/DeleteButton";
+import { getAllKKNProkersAdmin } from "@/lib/supabase/queries";
+import { AlertTriangle, Plus, Image as ImageIcon } from "lucide-react";
+import { KKNSectionBanner } from "@/components/admin/kkn/KKNSectionBanner";
+import { KKNProkerCard, type KKNProkerCardData } from "@/components/admin/kkn/KKNProkerCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminKKNProkerList() {
-  const { data: prokers, error } = await getAllKKNProkers();
-  if (error) {
-    return (
-      <div className="p-4">
-        <p className="text-red-600">Error: {String(error)}</p>
-      </div>
-    );
-  }
+  const { data, error } = await getAllKKNProkersAdmin();
+  const prokers = data as unknown as KKNProkerCardData[] | null;
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold">Manajemen Program Dampak</h1>
-        <Link
-          href="/admin/kkn/proker/new"
-          className="bg-ocean-600 text-ocean-600 px-4 py-2 rounded text-sm"
-        >
-          + Tambah Program
-        </Link>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <KKNSectionBanner
+          crumbs={[
+            { label: "Dashboard", href: "/admin" },
+            { label: "KKN Hub", href: "/admin/kkn" },
+            { label: "Program Kerja" },
+          ]}
+          title="Manajemen Program Dampak"
+          subtitle="Kelola program kerja unggulan dan capaian dampaknya."
+          badgeLabel="Proker KKN"
+          badgeIcon={ImageIcon}
+          action={{ href: "/admin/kkn/proker/new", label: "Tambah Program", icon: Plus }}
+        />
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-sand-50 border-b">
-            <tr>
-              <th className="p-4 font-medium">Judul</th>
-              <th className="p-4 font-medium">Desa</th>
-              <th className="p-4 font-medium text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {prokers?.map((p: any) => (
-              <tr key={p.id} className="hover:bg-sand-50">
-                <td className="p-4 font-medium">{p.title}</td>
-                <td className="p-4">{p.villages?.name || "Umum"}</td>
-                <td className="p-4 text-center space-x-2">
-                  <Link
-                    href={`/admin/kkn/proker/${p.id}`}
-                    className="text-ocean-600 hover:underline"
-                  >
-                    Edit
-                  </Link>
-                  <DeleteButton
-                    table="kkn_prokers"
-                    id={p.id}
-                    title={p.title}
-                    redirectAfter="/admin/kkn/proker"
-                  />
-                </td>
-              </tr>
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl border-2 border-error bg-error/10 p-4 font-bold text-error">
+            <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
+            Gagal memuat data program kerja. Muat ulang halaman untuk mencoba lagi.
+          </div>
+        ) : !prokers || prokers.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-on-surface bg-background p-12 text-center hard-shadow-sm">
+            <span className="inline-flex rounded-xl border-2 border-on-surface bg-primary-container p-3 text-on-primary-container">
+              <ImageIcon className="size-6" aria-hidden="true" />
+            </span>
+            <p className="font-serif text-lg font-black text-on-surface">
+              Belum Ada Program Kerja
+            </p>
+            <p className="max-w-sm text-sm text-on-surface-variant">
+              Tambahkan program kerja unggulan untuk mulai menampilkan capaian dampaknya di
+              halaman ini dan situs publik.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {prokers.map((proker, index) => (
+              <KKNProkerCard key={proker.id} proker={proker} index={index} />
             ))}
-          </tbody>
-        </table>
-        {(!prokers || prokers.length === 0) && (
-          <p className="p-6 text-center text-gray-500">Belum ada program.</p>
+          </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

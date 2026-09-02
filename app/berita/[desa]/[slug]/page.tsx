@@ -5,6 +5,7 @@ import Image from "next/image";
 import { formatDate } from "@/lib/utils";
 import { Calendar, User, MapPin, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { BeritaPageBackground } from "@/components/berita/BeritaPageBackground";
 
 export const revalidate = 3600;
 
@@ -26,8 +27,10 @@ export default async function NewsDetail({
   const hasExtraImages = extraImages.length > 0;
 
   return (
-    <article className="bg-natural-paper py-12 border-b-4 border-on-surface min-h-screen">
-      <div className="max-w-6xl mx-auto px-6">
+    <article className="relative bg-natural-paper py-12 border-b-4 border-on-surface min-h-screen overflow-hidden">
+      <BeritaPageBackground />
+
+      <div className="relative max-w-6xl mx-auto px-6 z-10">
         
         {/* Navigasi Atas */}
         <Link href={`/berita/${desa}`} className="inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant hover:text-primary mb-8 group">

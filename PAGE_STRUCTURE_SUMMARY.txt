@@ -1,0 +1,81 @@
+Ringkasan Struktur Halaman, Komponen, Hooks, dan Constants
+=========================================================
+
+Tujuan:
+- Memetakan alur data dan penggunaan komponen pada halaman utama (`app/page.tsx`) dan halaman profil (`app/profil/page.tsx`).
+- Menyediakan ringkasan terstruktur agar LLM dapat membaca dan menggunakan ini sebagai acuan tunggal untuk menyelaraskan page-page di proyek.
+
+1) Halaman: app/page.tsx (HomePage)
+- Import utama:
+  - `useHomePageData` dari `hooks/useHomePageData.ts` (hook data fetching)
+  - Komponen: `HeroSection`, `StatsSection`, `PotensiBento`, `KKNSection` dari `components/home`
+- Alur data:
+  - `useHomePageData()` mengembalikan { villages, stats, featuredProkers, kknStats, loading }
+  - Props yang diteruskan:
+    - `HeroSection` receives `villages`, `stats`
+    - `StatsSection` receives `stats`
+    - `PotensiBento` tidak menerima data langsung (menggunakan `POTENSI_DESA` dari constants)
+    - `KKNSection` receives `kknStats`, `featuredProkers`, `loading`
+
+2) Halaman: app/profil/page.tsx (ProfilPage)
+- Pendekatan: sebagian besar UI untuk hero dan layout didefinisikan inline di file ini (local `HeroSection` function), bukan menggunakan `components/home/HeroSection`.
+- Import eksternal utama:
+  - `InteractiveMap` dari `components/kkn/InteractiveMap`
+  - `framer-motion`, `react-intersection-observer`, `Image` dari `next/image`, dan ikon `lucide-react`
+- Alur data/komponen:
+  - HeroSection (lokal) menggunakan `useInView`, `motion` untuk animasi.
+  - Bagian peta menggunakan `InteractiveMap` (komponen terpisah) yang bertanggung jawab atas peta interaktif dan event klik desa.
+
+3) Hooks: hooks/useHomePageData.ts
+- Tanggung jawab:
+  - Menginisialisasi Supabase client (`lib/supabase/client.ts`) dan mengambil data: villages, count UMKM, jurnal (published), prokers (published), dan featured prokers (limit 3)
+  - Mengelola state lokal: `villages`, `stats`, `featuredProkers`, `kknStats`, `loading`
+- Nilai kembalian (interface): { villages, stats, featuredProkers, kknStats, loading }
+- Digunakan oleh: `app/page.tsx` (HomePage) dan komponen di dalam `components/home`.
+
+4) Constants: constants/home.ts
+- Tipe yang didefinisikan: `Village`, `Proker`, `VillageMetadata`, `HomeStats`, `KKNStats`
+- Export utama & penggunaannya:
+  - `POTENSI_DESA` → digunakan oleh `components/home/PotensiBento.tsx`
+  - `VILLAGE_METADATA` → metadata desa, kemungkinan digunakan oleh komponen peta atau detail desa
+  - `HERO_CTA_BUTTONS`, `HERO_WORDS` → digunakan oleh `components/home/HeroSection.tsx`
+  - `HERO_STATS_CONFIG`, `STATS_CARDS` → digunakan oleh `StatsSection.tsx` untuk konfigurasi kartu statistik
+
+5) Komponen (folder: components/home)
+- `AnimatedBackground.tsx` : elemen dekoratif background animasi (diekspos melalui index)
+- `HeroSection.tsx` : menerima `villages` dan `stats`, komponennya menggunakan `HERO_WORDS`, `HERO_CTA_BUTTONS`, menampilkan judul hero, CTA, dan foto latar.
+- `StatsSection.tsx` : menerima `stats`, menampilkan kartu statistik dengan efek odometer menggunakan `STATS_CARDS`.
+- `PotensiBento.tsx` : grid asimetris yang menggunakan `POTENSI_DESA` untuk menampilkan potensi desa.
+- `KKNSection.tsx` : menerima `kknStats`, `featuredProkers`, `loading`; menampilkan CTA jurnal/proker, badge count, dan daftar program kerja unggulan.
+
+6) Shared UI (components/ui)
+- `AnimatedBadge`, `FloatingCard`, `MotionCard` — utilitas UI kecil yang dipakai oleh komponen home (mis. `AnimatedBadge` di Hero, `MotionCard` di PotensiBento, `FloatingCard` di KKNSection).
+
+7) Alur data end-to-end (sederhana)
+- `useHomePageData()` → fetch supabase → set state pada hook
+→ `HomePage` (app/page.tsx) memanggil hook → meneruskan props ke komponen presentasional (Hero, Stats, KKNSection)
+→ Komponen presentasional menggunakan `constants/home` untuk teks/config statis dan `components/ui` untuk building blocks visual
+
+8) Rekomendasi agar semua page menjadi 1 acuan
+- Konsistensi: gunakan pendekatan yang sama untuk semua halaman utama:
+  - Pisahkan struktur presentasi (komponen di `components/`) dari halaman yang hanya merakit data dan props (`app/*.page.tsx`).
+  - Jika `app/profil/page.tsx` memiliki `HeroSection` yang sama pola/struktur dengan `components/home/HeroSection.tsx`, pindahkan ke `components/home` dan gunakan kembali.
+- Kontrak data: buat interface/tipe pusat di `constants/` (sebagaimana sudah ada di `constants/home.ts`) dan pastikan semua komponen menerima props yang sesuai tipe tersebut.
+- Dokumentasi: file ini (`PAGE_STRUCTURE_SUMMARY.txt`) menjadi acuan; apabila mau, buat file `COMPONENT_GUIDELINES.md` berisi aturan singkat pembuatan page, hook, dan komponen.
+
+9) Lokasi file penting (ringkasan cepat)
+- Pages:
+  - app/page.tsx (HomePage) — pengumpul data & assembler
+  - app/profil/page.tsx (ProfilPage) — hero lokal + `InteractiveMap`
+- Hooks:
+  - hooks/useHomePageData.ts
+- Constants:
+  - constants/home.ts
+- Komponen utama:
+  - components/home/HeroSection.tsx
+  - components/home/StatsSection.tsx
+  - components/home/PotensiBento.tsx
+  - components/home/KKNSection.tsx
+
+Catatan penutup:
+- Saya sudah memindai file-file utama yang terkait Home dan Profil, beserta hook dan konstanta yang dipakai. File ini ditulis agar LLM lain dapat membaca struktur dan menyarankan normalisasi page-page menjadi acuan tunggal.

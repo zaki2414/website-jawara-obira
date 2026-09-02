@@ -1,123 +1,267 @@
 // app/login/page.tsx
 "use client";
 
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { motion, type Variants } from "framer-motion";
+import { Lock, AlertCircle } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { Button } from "@/components/ui/button";
+
+// ==========================================
+// ANIMATED BACKGROUND — kerangka SAMA PERSIS dengan app/not-found.tsx
+// (partikel Hiasan 5.svg melayang + dua orb gradasi), cuma warna orb
+// divariasikan (primary/tertiary, bukan merah/oranye) karena ini bukan
+// halaman error. Duplikasi kecil disengaja, bukan diekstrak jadi komponen
+// bersama, supaya not-found.tsx (yang diminta TIDAK diubah selain teks
+// 404-nya) tetap sepenuhnya utuh.
+// ==========================================
+
+function AnimatedLoginBackground() {
+  // useState(lazy initializer) — BUKAN useMemo — karena Math.random() di sini
+  // impure; React boleh re-invoke callback useMemo kapan saja tanpa jaminan
+  // efek samping konsisten, sedangkan initializer useState dijamin cuma
+  // jalan sekali per mount. (not-found.tsx masih pakai useMemo lama — tidak
+  // diubah sesuai permintaan, tapi kode baru di sini pakai pola yang benar.)
+  const [particles] = useState(() =>
+    Array.from({ length: 12 }, (_, i) => {
+      const size = 16 + Math.floor(Math.random() * 24);
+      return {
+        id: i,
+        size,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        duration: 4 + Math.random() * 4,
+        delay: Math.random() * 2,
+      };
+    }),
+  );
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <motion.div
+        className="absolute top-1/4 left-1/4 w-96 h-96 bg-linear-to-br from-primary-container via-primary/10 to-transparent rounded-full blur-3xl opacity-20"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15], x: [0, 30, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-linear-to-tl from-tertiary-container via-tertiary/10 to-transparent rounded-full blur-3xl opacity-15"
+        animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.2, 0.1], x: [0, -30, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      />
+
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute opacity-35 select-none"
+          style={{ left: p.left, top: p.top }}
+          animate={{ y: [0, -40, 0], rotate: [0, 180, 360], scale: [1, 1.15, 1] }}
+          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+        >
+          <Image src="/Hiasan 5.svg" alt="" width={p.size} height={p.size} className="object-contain" aria-hidden="true" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    setError(null);
+    const supabase = createClient();
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-        },
+        queryParams: { access_type: "offline", prompt: "consent" },
       },
     });
-    if (error) {
-      console.error("OAuth error:", error);
-      alert("Login gagal: " + error.message);
-    }
+    if (oauthError) setError(oauthError.message);
   };
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      alert("Login gagal: " + error.message);
+    const supabase = createClient();
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (loginError) {
+      setError(loginError.message);
+      setLoading(false);
     } else {
       router.push("/admin");
       router.refresh();
     }
   };
 
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm border border-sand-200">
-        <h2 className="text-2xl font-serif font-bold text-ocean-800 mb-2 text-center">
-          🔐 Admin Login
-        </h2>
-        <p className="text-gray-500 text-center text-sm mb-6">
-          Masuk untuk mengelola konten
-        </p>
+  if (!mounted) return null;
 
-        {/* Form Email/Password */}
-        <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+  };
+
+  return (
+    <motion.main
+      className="min-h-screen flex items-center justify-center bg-aged-paper px-4 py-12 relative overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <AnimatedLoginBackground />
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="bg-background border-4 border-on-surface p-6 md:p-8 rounded-2xl hard-shadow-lg text-center max-w-sm w-full space-y-5 relative z-10"
+      >
+        {/* Eyebrow badge — flex + w-fit + mx-auto (BUKAN inline-flex sendirian)
+            supaya ini jadi blok sendiri yang center, bukan sejajar dengan
+            kotak ikon di baris yang sama. */}
+        <motion.div variants={itemVariants} className="flex w-fit mx-auto">
+          <div className="flex items-center gap-2 border-2 border-on-surface bg-background px-3 py-1 rounded-full hard-shadow-sm">
+            <Lock className="size-3.5 text-primary" aria-hidden="true" />
+            <span className="text-label-sm font-black uppercase tracking-widest text-on-surface">
+              Portal Admin
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Ikon melayang — pola identik FloatingErrorIcon di not-found.tsx,
+            warna primary (bukan merah), Hiasan 5.svg yang sama berputar di dalamnya. */}
+        <motion.div
+          className="flex w-fit mx-auto p-4 bg-linear-to-br from-tertiary to-tertiary-container/30 text-on-primary border-4 border-on-surface rounded-2xl hard-shadow-sm relative"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{
+            duration: 0.8,
+            delay: 0.3,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
+          whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0, 102, 137, 0.25)" }}
+        >
+          <motion.div
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 relative flex items-center justify-center"
+          >
+            <Image
+              src="/Hiasan 5.svg"
+              alt=""
+              width={43}
+              height={43}
+              className="brightness-200"
+              aria-hidden="true"
+            />
+          </motion.div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="space-y-1.5">
+          <h1 className="font-serif text-2xl md:text-3xl font-black text-on-surface tracking-tight leading-tight">
+            Masuk Admin
+          </h1>
+          <p className="text-xs md:text-sm font-medium text-on-surface-variant/80 leading-relaxed px-2">
+            Masuk untuk mengelola konten Jawara Obira.
+          </p>
+        </motion.div>
+
+        {error && (
+          <motion.div
+            variants={itemVariants}
+            role="alert"
+            className="flex items-center gap-2 rounded-lg border-2 border-error/30 bg-error-container p-3 text-left text-sm font-bold text-error"
+          >
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            {error}
+          </motion.div>
+        )}
+
+        <motion.form variants={itemVariants} onSubmit={handleEmailLogin} className="space-y-3 text-left">
           <input
             name="email"
             type="email"
             placeholder="Email"
             required
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full rounded-lg border-2 border-on-surface bg-background p-3 text-sm font-black uppercase tracking-wider text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <input
             name="password"
             type="password"
             placeholder="Password"
             required
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full rounded-lg border-2 border-on-surface bg-background p-3 text-sm font-black uppercase tracking-wider text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
-          <button
-            type="submit"
-            className="w-full py-3 bg-ocean-600 text-white font-semibold rounded-lg hover:bg-ocean-700 transition"
-          >
-            Login dengan Email
-          </button>
-        </form>
+          <Button type="submit" variant="primary" loading={loading} className="w-full">
+            {loading ? "Memproses..." : "Login dengan Email"}
+          </Button>
+        </motion.form>
 
-        <div className="relative my-6">
+        <motion.div variants={itemVariants} className="relative py-1">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
+            <div className="w-full border-t-2 border-dashed border-outline-variant" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">atau</span>
+          <div className="relative flex justify-center">
+            <span className="bg-background px-3 text-label-sm font-black uppercase tracking-widest text-on-surface-variant">
+              Atau
+            </span>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Google OAuth Button - Pakai function call, bukan href manual */}
-        <button
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-gray-700"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            />
-            <path fill="none" d="M1 1h22v22H1z" />
-          </svg>
-          Login dengan Google
-        </button>
+        <motion.div variants={itemVariants}>
+          {/* variant="secondary" (bukan "primary") — sengaja beda dari tombol
+              Email supaya ada satu aksi utama yang jelas menonjol (biru) dan
+              satu alternatif (netral), tapi keduanya tetap pakai typography
+              Button yang sama (font-black uppercase tracking-wider) — tidak
+              ada className override lagi yang bikin teksnya beda gaya. */}
+          <Button type="button" variant="tertiary" onClick={handleGoogleLogin} className="w-full">
+            <FcGoogle className="size-5" aria-hidden="true" />
+            Login dengan Google
+          </Button>
+        </motion.div>
 
-        <p className="mt-6 text-xs text-gray-400 text-center">
-          Hanya akun yang terdaftar sebagai admin yang dapat mengakses
-          dashboard.
-        </p>
-      </div>
-    </main>
+        <motion.p variants={itemVariants} className="text-xs text-on-surface-variant/70">
+          Hanya akun yang terdaftar sebagai admin yang dapat mengakses dashboard.
+        </motion.p>
+      </motion.div>
+
+      {/* Corner ornaments — sama seperti not-found.tsx */}
+      <motion.div
+        className="absolute top-5 -right-12 opacity-35 pointer-events-none select-none z-0"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+      >
+        <Image src="/Hiasan 5.svg" alt="" width={192} height={192} className="object-contain" aria-hidden="true" />
+      </motion.div>
+      <motion.div
+        className="absolute -bottom-16 -left-16 opacity-35 pointer-events-none select-none z-0"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+      >
+        <Image src="/Hiasan 5.svg" alt="" width={256} height={256} className="object-contain" aria-hidden="true" />
+      </motion.div>
+    </motion.main>
   );
 }

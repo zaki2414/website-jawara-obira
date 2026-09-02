@@ -1,4 +1,8 @@
+import { readFile } from "fs/promises";
+import path from "path";
+import type { FeatureCollection } from "geojson";
 import { createClient } from "./server";
+import { findBangunanContaining } from "@/lib/geo";
 
 // ================= TYPES & INTERFACES =================
 
@@ -69,6 +73,8 @@ export interface UMKMPayload {
   full_description?: string;
   location_text?: string;
   thumbnail_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface UMKMGalleryPayload {
@@ -125,19 +131,58 @@ interface GroupedJournal {
 
 // ================= VILLAGE QUERIES =================
 
-export async function getVillageBySlug(slug: string) {
+export interface VillagePayload {
+  name: string;
+  title?: string | null;
+  description?: string | null;
+  long_description?: string | null;
+  highlight?: string | null;
+  thumbnail_url?: string | null;
+}
+
+export interface VillageStatisticsPayload {
+  population?: number | null;
+  households?: number | null;
+  hamlets?: number | null;
+  area_km2?: number | null;
+}
+
+// Dipakai admin (list+form) DAN publik (/profil, VillageExplorer.tsx) — sama
+// persis, tidak ada beda published/draft untuk desa (cuma 2 baris tetap,
+// Kawasi & Soligi), jadi satu fungsi cukup buat keduanya.
+export async function getAllVillages() {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("villages")
       .select("*, village_statistics(*)")
-      .eq("slug", slug)
+      .order("slug");
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function getVillageById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("villages")
+      .select("*, village_statistics(*)")
+      .eq("id", id)
       .single();
     return { data, error };
   } catch (err) {
     return { data: null, error: err };
   }
 }
+
+// TIDAK ada updateVillage() di sini — pola form admin di proyek ini (lihat
+// UMKMForm.tsx/PetaFacilityForm.tsx) selalu menulis lewat browser client
+// (lib/supabase/client.ts) langsung dari Client Component, bukan lewat
+// queries.ts (yang server-only: pakai cookies() lewat lib/supabase/server.ts
+// dan fs/promises, tidak bisa di-bundle ke browser). VillageForm.tsx
+// menyimpan dua UPDATE (villages + village_statistics) sendiri di sana.
 
 // ================= NEWS (BERITA) QUERIES =================
 
@@ -192,6 +237,24 @@ export async function getNewsDetail(slug: string) {
   }
 }
 
+// Dipakai admin (app/admin/berita/[id]/page.tsx) untuk mengisi form edit —
+// sebelumnya page.tsx memanggil createClient() + query manual langsung,
+// melanggar aturan "semua query Server Component lewat lib/supabase/queries.ts"
+// (pola sama dengan getCultureById/getUMKMById).
+export async function getNewsById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("news")
+      .select("*, villages(slug)")
+      .eq("id", id)
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
 // ✅ BARU: CRUD News
 export async function createNews(payload: NewsPayload) {
   try {
@@ -239,7 +302,9 @@ export async function getAllCulture() {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("culture_articles")
-      .select("id, title, slug, thumbnail_url, category, published_at")
+      .select(
+        "id, title, slug, thumbnail_url, category, published_at, villages(name)",
+      )
       .order("published_at", { ascending: false });
     return { data, error };
   } catch (err) {
@@ -254,6 +319,23 @@ export async function getCultureDetail(slug: string) {
       .from("culture_articles")
       .select("*, villages(name, slug)")
       .eq("slug", slug)
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Dipakai halaman admin (edit by id) — sebelumnya app/admin/budaya/[id]/page.tsx
+// memanggil createClient() + query manual langsung di page.tsx, melanggar
+// aturan "semua query Server Component lewat lib/supabase/queries.ts".
+export async function getCultureById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("culture_articles")
+      .select("*, villages(name, slug)")
+      .eq("id", id)
       .single();
     return { data, error };
   } catch (err) {
@@ -326,12 +408,45 @@ export async function getAllUMKM(search?: string, businessType?: string) {
   }
 }
 
+// Hitungan per jenis usaha (tidak terpengaruh filter q/type) — dipakai legenda
+// statistik di UMKMHeader supaya pengguna bisa lihat sebaran taksonomi lengkap.
+export async function getUMKMBusinessTypeCounts() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("umkm").select("business_type");
+    if (error || !data) return { data: null, error };
+
+    const counts: Record<string, number> = {};
+    for (const row of data) {
+      counts[row.business_type] = (counts[row.business_type] ?? 0) + 1;
+    }
+    return { data: counts, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Baca bangunan.geojson/bangunan-soligi.geojson langsung dari disk (BUKAN
+// fetch HTTP ke public/) — ini Server Component/query helper yang jalan di
+// Node, jadi baca file lebih murah & tidak butuh self-fetch loop ke server
+// sendiri. Dipakai sekali per request halaman detail UMKM (revalidate 3600
+// di app/umkm/[slug]/page.tsx), jadi tidak perlu di-cache manual di sini.
+async function loadBangunanGeoJSON(villageSlug: string): Promise<FeatureCollection | null> {
+  const filename = villageSlug === "soligi" ? "bangunan-soligi.geojson" : "bangunan.geojson";
+  try {
+    const raw = await readFile(path.join(process.cwd(), "public", "data", filename), "utf-8");
+    return JSON.parse(raw) as FeatureCollection;
+  } catch {
+    return null;
+  }
+}
+
 export async function getUMKMBySlug(slug: string) {
   try {
     const supabase = await createClient();
     const { data: umkm, error: umkmError } = await supabase
       .from("umkm")
-      .select("*, villages(name)")
+      .select("*, villages(name, slug)")
       .eq("slug", slug)
       .single();
     if (umkmError || !umkm) return { data: null, error: umkmError };
@@ -353,9 +468,27 @@ export async function getUMKMBySlug(slug: string) {
         .eq("umkm_id", umkm.id),
     ]);
 
+    // Blok/dusun BUKAN kolom tabel — diturunkan dari titik lat/lng UMKM
+    // terhadap poligon bangunan desa yang bersangkutan (point-in-polygon),
+    // supaya selalu sinkron dengan peta kadaster tanpa admin isi manual.
+    let blok: string | null = null;
+    const villageSlug = (umkm.villages as { slug?: string } | null)?.slug;
+    if (umkm.latitude != null && umkm.longitude != null && villageSlug) {
+      const bangunan = await loadBangunanGeoJSON(villageSlug);
+      if (bangunan) {
+        const match = findBangunanContaining(
+          { lat: umkm.latitude, lng: umkm.longitude },
+          bangunan,
+        );
+        const matchedBlok = (match?.properties as { BLOK?: string } | undefined)?.BLOK?.trim();
+        blok = matchedBlok || null;
+      }
+    }
+
     return {
       data: {
         ...umkm,
+        blok,
         gallery: gallery.data || [],
         features: features.data?.map((f: any) => f.feature) || [],
         categories: categories.data?.map((c: any) => c.cat) || [],
@@ -364,6 +497,90 @@ export async function getUMKMBySlug(slug: string) {
             item_name: p.item_name,
             category: p.c,
           })) || [],
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Semua pin UMKM yang punya lokasi Google Maps — dipakai peta kadaster
+// /profil (VillageCadastralMap.tsx) untuk mencocokkan UMKM ke poligon
+// bangunan via point-in-polygon di sisi client (geojson bangunan sudah
+// di-fetch di sana). feature_id TIDAK disimpan di tabel `umkm` sama sekali —
+// pencocokan selalu dihitung ulang dari lat/lng supaya tidak ada dua sumber
+// kebenaran lokasi yang bisa saling tidak sinkron.
+export async function getUMKMMapPins() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("umkm")
+      .select("id, slug, name, thumbnail_url, latitude, longitude, villages(slug)")
+      .not("latitude", "is", null)
+      .not("longitude", "is", null);
+    if (error || !data) return { data: null, error };
+
+    const umkmIds = data.map((row) => row.id);
+    const { data: galleryRows } = await supabase
+      .from("umkm_gallery")
+      .select("umkm_id, image_url")
+      .in("umkm_id", umkmIds)
+      .order("sort_order");
+
+    const firstGalleryByUmkmId = new Map<string, string>();
+    for (const row of galleryRows || []) {
+      if (!firstGalleryByUmkmId.has(row.umkm_id)) {
+        firstGalleryByUmkmId.set(row.umkm_id, row.image_url);
+      }
+    }
+
+    const pins = data.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      thumbnail_url: row.thumbnail_url,
+      latitude: row.latitude as number,
+      longitude: row.longitude as number,
+      village_slug: (row.villages as { slug?: string } | null)?.slug ?? null,
+      extra_photo_url: firstGalleryByUmkmId.get(row.id) ?? null,
+    }));
+
+    return { data: pins, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Dipakai admin (app/admin/umkm/[id]/page.tsx) untuk mengisi form edit —
+// TANPA filter published (beda dari getUMKMBySlug yang untuk halaman publik),
+// mengambil relasi gallery/features/categories/products sekaligus supaya
+// page.tsx tidak perlu panggil createClient() langsung (pola sama dengan
+// getCultureById).
+export async function getUMKMById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data: umkm, error: umkmError } = await supabase
+      .from("umkm")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (umkmError || !umkm) return { data: null, error: umkmError };
+
+    const [gallery, features, categories, products] = await Promise.all([
+      supabase.from("umkm_gallery").select("*").eq("umkm_id", id),
+      supabase.from("umkm_features").select("feature").eq("umkm_id", id),
+      supabase.from("umkm_category_items").select("category_id").eq("umkm_id", id),
+      supabase.from("umkm_products").select("item_name, category_id").eq("umkm_id", id),
+    ]);
+
+    return {
+      data: {
+        ...umkm,
+        gallery: gallery.data ?? [],
+        features: features.data?.map((f) => f.feature) ?? [],
+        categories: categories.data ?? [],
+        products: products.data ?? [],
       },
       error: null,
     };
@@ -530,6 +747,41 @@ export async function deleteKKNTeamMember(id: string) {
 
 // ================= KKN JOURNAL QUERIES =================
 // (Dibiarkan sama seperti sebelumnya)
+
+// Dipakai khusus kalender manajemen admin (app/admin/kkn/jurnal/page.tsx) —
+// ambil SEMUA jurnal tanpa filter bulan, supaya navigasi kalender bisa
+// pindah ke bulan mana pun secara instan di client tanpa fetch ulang.
+export async function getAllKKNJournalsForAdmin() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("kkn_journals")
+      .select("id, title, slug, cover_image, activity_date, village_id, villages(name)")
+      .order("activity_date", { ascending: true });
+    if (error || !data) return { data: null, error };
+
+    // Supabase kadang mengembalikan relasi villages(name) sebagai array,
+    // kadang sebagai objek tunggal, tergantung inferensi FK — dinormalisasi
+    // di sini (sama seperti getKKNJournalsByMonth) supaya konsumen di client
+    // selalu menerima bentuk yang konsisten: { name: string } | null.
+    const normalized = data.map((journal) => {
+      let villageData: { name: string } | null = null;
+      if (journal.villages) {
+        if (Array.isArray(journal.villages) && journal.villages.length > 0) {
+          villageData = { name: String(journal.villages[0].name) };
+        } else if (!Array.isArray(journal.villages)) {
+          villageData = { name: String((journal.villages as { name: string }).name) };
+        }
+      }
+      return { ...journal, villages: villageData };
+    });
+
+    return { data: normalized, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
 export async function getKKNJournalsByMonth(
   year: number,
   month: number,
@@ -791,6 +1043,23 @@ export async function getAllKKNProkers(villageSlug?: string) {
   }
 }
 
+// Dipakai halaman admin (list semua entry termasuk draft) — getAllKKNProkers
+// di atas khusus halaman publik dan sengaja hanya menampilkan yang published.
+export async function getAllKKNProkersAdmin() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("kkn_prokers")
+      .select(
+        "id, title, slug, image_url, short_description, village_id, villages(name, slug)",
+      )
+      .order("created_at", { ascending: false });
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
 export async function getKKNProkerBySlug(slug: string) {
   try {
     const supabase = await createClient();
@@ -799,6 +1068,22 @@ export async function getKKNProkerBySlug(slug: string) {
       .select("*, villages(name, slug)")
       .eq("slug", slug)
       .eq("published", true)
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Dipakai halaman admin (edit by id, tanpa filter published supaya draft tetap
+// bisa dibuka) — getKKNProkerBySlug di atas khusus untuk halaman publik.
+export async function getKKNProkerById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("kkn_prokers")
+      .select("*, villages(name, slug)")
+      .eq("id", id)
       .single();
     return { data, error };
   } catch (err) {
@@ -849,19 +1134,30 @@ export async function deleteKKNProker(id: string) {
 }
 
 // ================= TOGA PLANTS QUERIES =================
-// (Dibiarkan sama seperti sebelumnya)
-export async function getAllTogaPlants(category?: string) {
+export async function getAllTogaPlants(search?: string) {
   try {
     const supabase = await createClient();
     let query = supabase
       .from("toga_plants")
       .select("*")
       .order("name_id", { ascending: true });
-    if (category) query = query.eq("category", category);
+    if (search) query = query.or(`name_id.ilike.%${search}%,name_latin.ilike.%${search}%`);
     const { data, error } = await query;
     return { data, error };
   } catch (err) {
     return { data: null, error: err };
+  }
+}
+
+export async function getTogaTotalCount() {
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("toga_plants")
+      .select("id", { count: "exact", head: true });
+    return { count: count ?? 0, error };
+  } catch (err) {
+    return { count: 0, error: err };
   }
 }
 
@@ -936,17 +1232,33 @@ export async function deleteTogaPlant(id: string) {
 }
 
 // ================= FAUNA OBI QUERIES =================
-// (Dibiarkan sama seperti sebelumnya)
-export async function getAllFauna() {
+export async function getAllFauna(search?: string, faunaClass?: string) {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from("fauna_obi")
       .select("*")
       .order("name_local", { ascending: true });
+    if (search) query = query.or(`name_local.ilike.%${search}%,name_scientific.ilike.%${search}%`);
+    if (faunaClass && faunaClass !== "all") query = query.eq("class", faunaClass);
+    const { data, error } = await query;
     return { data, error };
   } catch (err) {
     return { data: null, error: err };
+  }
+}
+
+// Total spesimen (tidak terpengaruh filter search/class) — dipakai widget counter
+// di hero list page supaya angkanya tetap bermakna saat user sedang memfilter.
+export async function getFaunaTotalCount() {
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("fauna_obi")
+      .select("id", { count: "exact", head: true });
+    return { count: count ?? 0, error };
+  } catch (err) {
+    return { count: 0, error: err };
   }
 }
 
@@ -1014,5 +1326,191 @@ export async function deleteFauna(id: string) {
     return { error };
   } catch (err) {
     return { error: err };
+  }
+}
+
+// ================= ADMIN DASHBOARD QUERIES =================
+// Dipakai khusus app/admin/page.tsx untuk kartu statistik ringkas.
+export async function getAdminDashboardStats() {
+  try {
+    const supabase = await createClient();
+    const [news, culture, gallery, umkm] = await Promise.all([
+      supabase.from("news").select("id", { count: "exact", head: true }),
+      supabase.from("culture_articles").select("id", { count: "exact", head: true }),
+      supabase.from("galleries").select("id", { count: "exact", head: true }),
+      supabase.from("umkm").select("id", { count: "exact", head: true }),
+    ]);
+    return {
+      data: {
+        news: news.count ?? 0,
+        culture: culture.count ?? 0,
+        gallery: gallery.count ?? 0,
+        umkm: umkm.count ?? 0,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Dipakai khusus app/admin/kkn/page.tsx untuk kartu statistik ringkas KKN hub.
+export async function getKKNHubStats() {
+  try {
+    const supabase = await createClient();
+    const [journals, prokers, members] = await Promise.all([
+      supabase.from("kkn_journals").select("id", { count: "exact", head: true }),
+      supabase.from("kkn_prokers").select("id", { count: "exact", head: true }),
+      supabase.from("kkn_members").select("id", { count: "exact", head: true }),
+    ]);
+    return {
+      data: {
+        journals: journals.count ?? 0,
+        prokers: prokers.count ?? 0,
+        members: members.count ?? 0,
+      },
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// ================= HOME PAGE QUERIES =================
+// Dipanggil dari app/page.tsx (Server Component) — menggantikan
+// hooks/useHomePageData.ts yang lama fetch client-side lewat useEffect
+// (kehilangan caching/SSR, lihat CLAUDE.md §1.1/§1.3). Tiap fungsi tetap
+// satu concern (pola sama dengan getUMKMBusinessTypeCounts/getKKNHubStats),
+// digabung lewat Promise.all di page-nya, bukan satu mega-fungsi.
+
+export async function getUMKMCount() {
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("umkm")
+      .select("id", { count: "exact", head: true });
+    return { count: count ?? 0, error };
+  } catch (err) {
+    return { count: 0, error: err };
+  }
+}
+
+export async function getPublishedKKNJournalCount() {
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("kkn_journals")
+      .select("id", { count: "exact", head: true })
+      .eq("published", true);
+    return { count: count ?? 0, error };
+  } catch (err) {
+    return { count: 0, error: err };
+  }
+}
+
+// count di sini TIDAK terpengaruh .limit() (PostgREST menghitung total baris
+// yang cocok terlepas dari limit/range) — jadi satu query ini sekaligus
+// menjawab "berapa total proker published" (dipakai badge KKNSection) DAN
+// "3 proker terbaru" (featuredProkers), tanpa perlu 2 round-trip terpisah
+// seperti hooks/useHomePageData.ts yang lama.
+export async function getFeaturedKKNProkers(limit = 3) {
+  try {
+    const supabase = await createClient();
+    const { data, count, error } = await supabase
+      .from("kkn_prokers")
+      .select("id, title, slug, short_description, image_url, impact_metrics, documentation", {
+        count: "exact",
+      })
+      .eq("published", true)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return { data, count: count ?? 0, error };
+  } catch (err) {
+    return { data: null, count: 0, error: err };
+  }
+}
+
+// ================= GALLERY QUERIES =================
+export async function getAllGalleries() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("galleries")
+      .select("*")
+      .order("uploaded_at", { ascending: false });
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// ================= MAP FACILITIES QUERIES =================
+// Tabel map_facilities menyimpan deskripsi + foto 14 fasilitas umum dari
+// public/data/fasum.geojson (feature_id sebagai kunci pencocokan ke
+// geometri) — TIDAK ada konsep published/draft, satu fungsi ini dipakai
+// untuk halaman publik (/profil) MAUPUN admin (/admin/peta), sama seperti
+// pola getAllGalleries()/getAllUMKM().
+export async function getMapFacilities() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("map_facilities")
+      .select("*")
+      .order("name");
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function getMapFacilityById(id: string) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("map_facilities")
+      .select("*")
+      .eq("id", id)
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// Baris map_facilities sudah di-seed tetap (1 baris per fitur fasum) —
+// admin hanya UPDATE (deskripsi + foto), tidak ada create/delete supaya
+// tidak ada baris yang lepas dari feature_id manapun di geojson.
+export async function updateMapFacility(
+  id: string,
+  payload: { name: string; description: string | null; photo_url: string | null },
+) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("map_facilities")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+// ================= MAP BUILDINGS QUERIES =================
+// Tabel map_buildings menyimpan override BLOK/No Rumah untuk poligon rumah
+// warga di public/data/bangunan*.geojson (feature_id sebagai kunci
+// pencocokan) — lihat scripts/create-map-buildings-table.sql. BEDA dari
+// map_facilities: TIDAK pre-seeded (264+ rumah per desa, kebanyakan tidak
+// pernah diedit), jadi diambil sekaligus lalu di-merge client-side oleh
+// VillageCadastralMap.tsx, bukan di-query per-fitur.
+export async function getMapBuildingOverrides() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("map_buildings").select("*");
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
   }
 }

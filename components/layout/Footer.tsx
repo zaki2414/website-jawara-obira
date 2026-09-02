@@ -1,17 +1,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, HeartHandshake, HardDriveDownload, ArrowRight } from "lucide-react";
+import { FOOTER_LINKS } from "@/constants/nav";
 
 export default function Footer() {
   return (
-    <footer className="bg-surface-container border-t-4 border-on-surface text-on-surface mt-auto">
+    <footer className="bg-surface-container border-t-2 border-on-surface text-on-surface mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           
           {/* KOLOM IDENTITAS HUB */}
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-primary border border-on-surface rounded text-background">
+              <div className="p-1.5 bg-primary border-2 border-on-surface rounded text-background">
                 <Image
                   src="/Logo Obi.svg"
                   alt="Logo Jawara Obira"
@@ -36,12 +37,7 @@ export default function Footer() {
               Peta Arsip Dokumen
             </h4>
             <ul className="space-y-2.5 text-sm font-bold">
-              {[
-                { href: "/berita", label: "Warta Berita Desa" },
-                { href: "/budaya", label: "Dokumentasi Budaya Obi" },
-                { href: "/galeri", label: "Galeri Foto Ekspedisi" },
-                { href: "/kkn", label: "Log Personel KKN UGM" }
-              ].map((item) => (
+              {FOOTER_LINKS.map((item) => (
                 <li key={item.href}>
                   <Link 
                     href={item.href} 
@@ -61,15 +57,15 @@ export default function Footer() {
               Maklumat Informasi
             </h4>
             <ul className="space-y-3 text-xs font-black uppercase tracking-wider text-on-surface-variant">
-              <li className="flex items-center gap-2 bg-background border border-on-surface p-2.5 rounded-lg">
-                <MapPin className="w-4 h-4 text-[#ef4444] shrink-0" />
+              <li className="flex items-center gap-2 bg-background border-2 border-on-surface p-2.5 rounded-lg">
+                <MapPin className="w-4 h-4 text-error shrink-0" />
                 <span>Pulau Obi, Halmahera Selatan</span>
               </li>
-              <li className="flex items-center gap-2 bg-background border border-on-surface p-2.5 rounded-lg">
+              <li className="flex items-center gap-2 bg-background border-2 border-on-surface p-2.5 rounded-lg">
                 <HeartHandshake className="w-4 h-4 text-sand-500 shrink-0" />
                 <span>Kolaborasi KKN UGM & Masyarakat</span>
               </li>
-              <li className="flex items-center gap-2 bg-background border border-on-surface p-2.5 rounded-lg">
+              <li className="flex items-center gap-2 bg-background border-2 border-on-surface p-2.5 rounded-lg">
                 <HardDriveDownload className="w-4 h-4 text-tropic-500 shrink-0" />
                 <span>Pangkalan Data Digital Terintegrasi</span>
               </li>

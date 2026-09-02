@@ -1,87 +1,58 @@
 // app/admin/kkn/jurnal/page.tsx
-import { getKKNJournalsByMonth } from "@/lib/supabase/queries";
-import Link from "next/link";
-import DeleteButton from "@/components/admin/DeleteButton";
+import { getAllKKNJournalsForAdmin } from "@/lib/supabase/queries";
+import { AlertTriangle, NotebookPen, Plus } from "lucide-react";
+import { KKNSectionBanner } from "@/components/admin/kkn/KKNSectionBanner";
+import {
+  KKNJournalCalendar,
+  type KKNJournalCalendarEntry,
+} from "@/components/admin/kkn/KKNJournalCalendar";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminKKNJournalList({
-  searchParams,
-}: {
-  searchParams: { year?: string; month?: string };
-}) {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
+export default async function AdminKKNJournalList() {
+  const { data, error } = await getAllKKNJournalsForAdmin();
+  const journals = (data ?? []) as unknown as KKNJournalCalendarEntry[];
 
-  const year = parseInt(searchParams.year || currentYear.toString());
-  const month = parseInt(searchParams.month || currentMonth.toString());
-
-  const { data: groupedJournals } = await getKKNJournalsByMonth(year, month);
-
-  // Flatten grouped data for admin list
-  const flatList = Object.values(groupedJournals || {}).flat();
+  const now = new Date();
+  // Default ke bulan entri jurnal PALING BARU (bukan selalu bulan berjalan) —
+  // supaya admin tidak mendarat di kalender kosong kalau seluruh data ada di
+  // periode lain (mis. arsip KKN yang sudah lewat).
+  const latest = journals.length > 0 ? journals[journals.length - 1] : null;
+  const [initialYear, initialMonth] = latest
+    ? latest.activity_date.split("-").map(Number)
+    : [now.getFullYear(), now.getMonth() + 1];
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold">Manajemen Jurnal KKN</h1>
-        <Link
-          href="/admin/kkn/jurnal/new"
-          className="bg-ocean-600 text-ocean-600 px-4 py-2 rounded text-sm"
-        >
-          + Tambah Jurnal
-        </Link>
+    <main className="pb-12">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <KKNSectionBanner
+          crumbs={[
+            { label: "Dashboard", href: "/admin" },
+            { label: "KKN Hub", href: "/admin/kkn" },
+            { label: "Jurnal" },
+          ]}
+          title="Kalender Jurnal KKN"
+          subtitle={`${journals.length} log kegiatan terdokumentasi sepanjang program.`}
+          badgeLabel="Jurnal KKN"
+          badgeIcon={NotebookPen}
+          action={{ href: "/admin/kkn/jurnal/new", label: "Tambah Jurnal", icon: Plus }}
+        />
       </div>
 
-      <div className="bg-white rounded-xl border border-sand-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-sand-50 border-b">
-            <tr>
-              <th className="p-4 font-medium">Tanggal</th>
-              <th className="p-4 font-medium">Judul</th>
-              <th className="p-4 font-medium">Desa</th>
-              <th className="p-4 font-medium text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {flatList.map((j: any) => (
-              <tr key={j.id} className="hover:bg-sand-50">
-                <td className="p-4">{j.activity_date}</td>
-                <td className="p-4 font-medium">{j.title}</td>
-                {/* ✅ PERBAIKAN: Jika villages?.name kosong/null, tampilkan "Umum / Kedua Desa" */}
-                <td className="p-4">
-                  {j.villages?.name ? (
-                    j.villages.name
-                  ) : (
-                    <span className="text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded text-xs border border-amber-200">
-                      Umum / Kedua Desa
-                    </span>
-                  )}
-                </td>
-                <td className="p-4 text-center space-x-2">
-                  <Link
-                    href={`/admin/kkn/jurnal/${j.id}`}
-                    className="text-ocean-600 hover:underline"
-                  >
-                    Edit
-                  </Link>
-                  <DeleteButton
-                    table="kkn_journals"
-                    id={j.id}
-                    title={j.title}
-                    redirectAfter="/admin/kkn/jurnal"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {flatList.length === 0 && (
-          <p className="p-6 text-center text-gray-500">
-            Belum ada jurnal bulan ini.
-          </p>
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl border-2 border-error bg-error/10 p-4 font-bold text-error">
+            <AlertTriangle className="size-5 shrink-0" aria-hidden="true" />
+            Gagal memuat data jurnal. Muat ulang halaman untuk mencoba lagi.
+          </div>
+        ) : (
+          <KKNJournalCalendar
+            journals={journals}
+            initialYear={initialYear}
+            initialMonth={initialMonth}
+          />
         )}
       </div>
-    </div>
+    </main>
   );
 }

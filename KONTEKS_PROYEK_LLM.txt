@@ -1,0 +1,132 @@
+KONTEKS PROYEK UNTUK LLM
+================================================================================
+Nama proyek: Jawara Obira — Website portal informasi Desa Kawasi & Soligi (Pulau Obi)
+Lokasi repositori: root proyek
+Tujuan file ini: memberikan konteks ringkas dan navigasi kode agar model LLM cepat memahami struktur, tech stack, alur data, dan titik-titik penting untuk pengembangan/penyesuaian.
+
+1) Ringkasan singkat
+- Portal web KKN UGM untuk mendokumentasikan: profil desa, berita, budaya, UMKM, TOGA (tanaman obat), fauna lokal, galeri, dan dokumentasi KKN (tim, jurnal, proker).
+- Memiliki panel admin untuk mengelola konten dan API routes untuk beberapa endpoint.
+
+2) Tech stack utama
+- Next.js 16.2.6 (App Router)
+- React 19.2.4
+- TypeScript ^5
+- Tailwind CSS v4 (+ @tailwindcss/typography)
+- Supabase (Postgres, Auth, Storage) via @supabase/supabase-js & @supabase/ssr
+- Rich text editor: TipTap (@tiptap/react, starter-kit, extensions)
+- Animations: GSAP
+- Cloudinary (optional image handling)
+- Utilities: slugify, lucide-react
+
+3) Cara menjalankan (singkat)
+- Instal dependencies: `npm install`
+- Jalankan dev: `npm run dev` (http://localhost:3000)
+- Build: `npm run build` ; Start: `npm start`
+- Perlu env vars Supabase di `.env.local` (contoh di README.md)
+
+4) File & folder penting (entry points)
+- `app/` — Semua halaman Next.js (App Router). Setiap `page.tsx` = route.
+  - `app/page.tsx` → homepage
+  - `app/layout.tsx` → root layout
+  - `app/globals.css` → global styles
+  - `app/admin/` → dashboard & manajemen konten
+  - `app/api/` → API route serverless (`route.ts` files)
+  - `app/auth/callback/route.ts` → auth callback
+
+- `components/` — UI & form components
+  - `components/admin/*` → NewsForm.tsx, CultureForm.tsx, UMKMForm.tsx, TogaPlantForm.tsx, FaunaForm.tsx, KKNJournalForm.tsx, dll.
+  - `components/home/*` → Hero, Sections
+  - `components/kkn/*` → CalendarGrid, InteractiveMap
+  - `components/layout/*` → Navbar, Footer
+  - `components/ui/*` → small UI atoms (MotionCard, FloatingCard)
+
+- `lib/` — utilitas & client
+  - `lib/supabase/client.ts` → browser supabase client
+  - `lib/supabase/server.ts` → server supabase client (cookies/session)
+  - `lib/supabase/queries.ts` → centralized DB queries (dipanggil oleh pages/api)
+  - `lib/auth.ts` → helper auth
+  - `lib/utils.ts` → helper umum
+
+- Root config
+  - `package.json`, `next.config.ts`, `tsconfig.json`, `postcss.config.mjs`, `eslint.config.mjs`
+
+5) API endpoints (yang ada)
+- `POST /api/auth/login` → `app/api/auth/login/route.ts`
+- `POST /api/auth/logout` → `app/api/auth/logout/route.ts`
+- `GET /api/toga/plants` → `app/api/toga/plants/route.ts`
+- `GET /auth/callback` → `app/auth/callback/route.ts`
+
+6) Database & entitas (ringkas)
+- Supabase (Postgres). Tabel utama yang digunakan di proyek:
+  - `villages` (profil desa)
+  - `news` (berita)
+  - `culture_articles` (budaya)
+  - `umkm` (+ gallery/produk)
+  - `toga_plants` (tanaman obat)
+  - `fauna_obi` (fauna lokal)
+  - `kkn_members`, `kkn_journals`, `kkn_prokers`
+
+7) Konvensi & titik perhatian untuk LLM
+- App Router: setiap folder dengan `page.tsx` adalah route. Cek `app/` untuk routing.
+- Komponen admin berinteraksi dengan Supabase melalui `lib/supabase/queries.ts` — periksa file ini untuk alur data.
+- Rich text content menggunakan TipTap — konten disimpan sebagai HTML atau JSON sesuai implementasi editor.
+- Upload gambar: `components/admin/ImageUploader.tsx` dan `ExtraImageUploader.tsx`; storage biasanya Supabase Storage atau Cloudinary.
+- Animasi peta: `components/kkn/InteractiveMap.tsx` menggunakan GSAP.
+
+8) Petunjuk cepat untuk pengembangan
+- Untuk menambah endpoint API: buat folder `app/api/<resource>/route.ts` mengikuti pattern Next.js App Router.
+- Untuk menambah halaman publik: buat folder `app/<route>/page.tsx` atau `app/<route>/[slug]/page.tsx`.
+- Untuk menambah model DB: tambahkan tabel di Supabase dashboard dan update `lib/supabase/queries.ts`.
+- Untuk otentikasi admin: periksa `lib/auth.ts` dan API auth routes.
+
+9) Jika LLM diminta membantu perubahan kode
+- Berikan path file yang ingin diubah (mis. `components/admin/NewsForm.tsx`).
+- Sertakan tujuan perubahan (contoh: "tambahkan field lokasi desa pada berita").
+- Jika menyangkut DB, sertakan schema atau contoh record.
+
+10) Kontak & referensi internal
+- README.md dan DOKUMENTASI_STRUKTUR.txt berisi panduan lebih lengkap dan instruksi setup.
+
+================================================================================
+Catatan: file ini dibuat agar LLM dapat membaca dan memahami konteks proyek tanpa harus menelusuri file satu per satu. Jika ingin ditambahkan: contoh schema SQL, skema env vars lengkap, atau daftar query di `lib/supabase/queries.ts`, beri tahu saya dan saya tambahkan.
+
+11) Detail Komponen, Hooks, dan Constants (ringkas)
+--------------------------------------------------------------------------------
+- Komponen Home (`components/home/`)
+  - `HeroSection.tsx` : Hero full-screen dengan parallax (Framer Motion), background image, CTA buttons, dan teks dinamis. Menggunakan konstanta dari `constants/home.ts` (HERO_WORDS, HERO_CTA_BUTTONS, HERO_STATS_CONFIG) dan menerima `villages` + `stats` dari `useHomePageData()` hook.
+  - `AnimatedBackground.tsx` : latar animasi dekoratif (dipanggil di landing).
+  - `StatsSection.tsx`, `PotensiBento.tsx`, `KKNSection.tsx` : section terpisah yang menampilkan statistik, kartu potensi desa (`POTENSI_DESA`) dan highlight program KKN.
+
+- Komponen KKN (`components/kkn/`)
+  - `InteractiveMap.tsx` : Peta SVG interaktif; menggunakan `gsap` untuk hover/click animations, menyimpan `activeRegion` untuk menampilkan panel detail; klik tombol menuju `/profil/[slug]`.
+  - `CalendarGrid.tsx` : Kalender jurnal KKN; menerima data `groupedJournals`, meng-handle navigasi bulan via query params dan menampilkan popup untuk tanggal kosong.
+  - `KKNJournalEmptyDay.tsx` : placeholder untuk hari tanpa jurnal.
+
+- Komponen Admin (`components/admin/`)
+  - `NewsForm.tsx` : Form pembuatan/edit berita; field: `title`, `slug`, `village`, `content` (RichTextEditor), `thumbnail`, `extra_images`, `author`. Meng-generate slug (utils), upload lewat `ImageUploader`/`ExtraImageUploader`, dan memanggil Supabase client untuk insert/update ke tabel `news`.
+  - `RichTextEditor.tsx` : wrapper TipTap untuk konten rich-text (images + links support).
+  - `ImageUploader.tsx`, `ExtraImageUploader.tsx` : komponen upload gambar ke Supabase Storage atau Cloudinary, mengembalikan URL.
+
+- Layout & UI atoms (`components/layout/`, `components/ui/`)
+  - `Navbar.tsx`, `Footer.tsx` : navigasi global dan footer.
+  - UI atoms: `MotionCard`, `FloatingCard`, `AnimatedBadge` — kecil, dapat dipakai di banyak page.
+
+- Hooks (`hooks/`)
+  - `useHomePageData.ts` : hook yang dipakai homepage untuk fetch data awal: `villages`, `stats` (desa, umkm, proker), `featuredProkers`, `kknStats`, dan `loading`. Implementasi: buat `createClient()` dari `lib/supabase/client` lalu Promise.all panggil beberapa tabel (`villages`, `umkm`, `kkn_journals`, `kkn_prokers`). Mengembalikan object `{ villages, stats, featuredProkers, kknStats, loading }`.
+  - (Tip) Untuk hook lain, cek folder `hooks/` bila ada; ikuti pattern data-fetch + loading state.
+
+- Constants (`constants/`)
+  - `constants/home.ts` : mengekspor types (`Village`, `Proker`, `HomeStats`, `KKNStats`) dan static data:
+    - `POTENSI_DESA` : array kartu potensi (icon, href, title, desc)
+    - `VILLAGE_METADATA` : metadata per-desa (location, desc, features, icon, color)
+    - `HERO_CTA_BUTTONS`, `HERO_WORDS`, `HERO_STATS_CONFIG`, `STATS_CARDS`
+  - Gunakan constants ini di komponen halaman untuk menjaga konsistensi teks, icon, dan konfigurasi tampilan.
+
+- Petunjuk penggunaan cepat untuk LLM saat memodifikasi komponen:
+  - Untuk perubahan data: cek `lib/supabase/queries.ts` atau hook yang memanggil `createClient()`.
+  - Untuk menambah field form: tambahkan input di form component (mis. `NewsForm.tsx`) dan update payload pada submit (insert/update ke Supabase).
+  - Untuk menambah entry static UI: tambahkan item di `constants/home.ts` lalu gunakan di komponen terkait.
+
+================================================================================
+Perluasan: Jika mau, saya bisa tambahkan ringkasan fungsi di setiap file `lib/supabase/queries.ts` dan contoh schema tabel Supabase.

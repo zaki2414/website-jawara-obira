@@ -2,23 +2,56 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client"; // ✅ Gunakan browser client
 import { generateSlug } from "@/lib/utils";
+import { Toast } from "@/components/ui/Toast";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ImageIcon,
+  FileText,
+  Images,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  Newspaper,
+} from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import ImageUploader from "./ImageUploader";
 import ExtraImageUploader from "./ExtraImageUploader";
+import { BERITA_ACCENT_BORDERS } from "./berita/beritaCardStyles";
+
+export type NewsExtraImage = {
+  url: string;
+  caption: string;
+};
+
+export type NewsRecord = {
+  id: string;
+  title: string;
+  slug: string;
+  village_slug?: string | null;
+  villages?: { slug: string } | null;
+  content: string;
+  thumbnail_url?: string | null;
+  author_name?: string | null;
+  extra_images?: NewsExtraImage[] | string | null;
+  published_at?: string | null;
+};
 
 type NewsFormProps = {
-  initialData?: any;
+  initialData?: NewsRecord | null;
   isNew: boolean;
 };
 
 export default function NewsForm({ initialData, isNew }: NewsFormProps) {
   const router = useRouter();
-  const defaultExtra =
+  const defaultExtra: NewsExtraImage[] =
     typeof initialData?.extra_images === "string"
-      ? JSON.parse(initialData.extra_images)
-      : initialData?.extra_images || [];
+      ? (JSON.parse(initialData.extra_images) as NewsExtraImage[])
+      : (initialData?.extra_images ?? []);
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
@@ -30,7 +63,7 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
   const [author, setAuthor] = useState(initialData?.author_name || "Admin");
   const [showSuccess, setShowSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
-  const [extraImages, setExtraImages] = useState([
+  const [extraImages, setExtraImages] = useState<NewsExtraImage[]>([
     {
       url: defaultExtra[0]?.url || "",
       caption: defaultExtra[0]?.caption || "",
@@ -125,12 +158,12 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
       // ✅ Lakukan mutasi langsung menggunakan browser client
       const { error } = isNew
         ? await supabase.from("news").insert(payload)
-        : await supabase.from("news").update(payload).eq("id", initialData.id);
+        : await supabase.from("news").update(payload).eq("id", initialData!.id);
 
       if (error) throw error;
 
       const successText = `Berita berhasil ${isNew ? "dibuat" : "diperbarui"}!`;
-      setMessage({ type: "success", text: `✅ ${successText}` });
+      setMessage({ type: "success", text: successText });
       setShowSuccess(true);
 
       if (isNew) {
@@ -141,29 +174,39 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
           router.push("/admin/berita");
         }, 1500);
       }
-    } catch (err: any) {
-      setMessage({ type: "error", text: `❌ Gagal: ${err.message}` });
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Terjadi kesalahan tidak dikenal";
+      setMessage({ type: "error", text: `Gagal: ${errorMessage}` });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-xl shadow-sm border border-sand-200 space-y-8"
-    >
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-8 rounded-2xl border-2 border-on-surface bg-background p-6 hard-shadow-md lg:col-span-2"
+      >
       {message && (
         <div
-          className={`p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+          role="status"
+          className={`flex items-center gap-2 p-3 rounded-lg border-2 text-sm font-bold ${message.type === "success" ? "bg-success/10 text-success border-success/30" : "bg-error-container text-error border-error/30"}`}
         >
+          {message.type === "success" ? (
+            <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          )}
           {message.text}
         </div>
       )}
 
       <section>
-        <h3 className="font-serif text-lg font-bold text-ocean-800 mb-3">
-          🖼️ Thumbnail Utama
+        <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-3">
+          <ImageIcon className="size-5" aria-hidden="true" />
+          Thumbnail Utama
         </h3>
         <ImageUploader
           key={`news-thumb-${formKey}`}
@@ -175,7 +218,7 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
 
       <section className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
             Judul *
           </label>
           {/* ✅ Gunakan handleTitleChange di sini */}
@@ -183,32 +226,32 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
             type="text"
             value={title}
             onChange={handleTitleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             placeholder="Contoh: Festival Bahari Obi 2026"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
             Slug *
           </label>
           <input
             type="text"
             value={slug}
             onChange={(e) => setSlug(generateSlug(e.target.value))}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500 font-mono text-sm"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             placeholder="festival-bahari-obi-2026"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
             Desa *
           </label>
           <select
             value={village}
             onChange={(e) => setVillage(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             required
           >
             <option value="kawasi">Kawasi</option>
@@ -216,22 +259,23 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
             Penulis
           </label>
           <input
             type="text"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             placeholder="Nama penulis"
           />
         </div>
       </section>
 
       <section>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          📝 Isi Berita *
+        <label className="flex items-center gap-2 text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-2">
+          <FileText className="size-4" aria-hidden="true" />
+          Isi Berita *
         </label>
         <RichTextEditor
           key={`news-rte-${formKey}`}
@@ -240,11 +284,12 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         />
       </section>
 
-      <section className="border-t border-sand-200 pt-6">
-        <h3 className="font-serif text-lg font-bold text-ocean-800 mb-2">
-          📸 Gambar Pendukung (Opsional)
+      <section className="border-t-2 border-dashed border-outline-variant pt-6">
+        <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-2">
+          <Images className="size-5" aria-hidden="true" />
+          Gambar Pendukung (Opsional)
         </h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-on-surface-variant mb-4">
           Maks 2 gambar. Posisi & rotasi otomatis: Kiri (-3°) & Kanan (+3°).
         </p>
         <div className="grid md:grid-cols-2 gap-6">
@@ -265,33 +310,60 @@ export default function NewsForm({ initialData, isNew }: NewsFormProps) {
         </div>
       </section>
 
-      <div className="flex gap-4 pt-4 border-t border-sand-200">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-3 bg-ocean-600 text-white font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50"
-        >
+      <div className="flex gap-4 pt-4 border-t-2 border-dashed border-outline-variant">
+        <Button type="submit" variant="cream" loading={loading}>
+          {!loading && <Save className="size-4" aria-hidden="true" />}
           {loading
             ? "Menyimpan..."
             : isNew
-              ? "📤 Publish Berita"
-              : "💾 Simpan Perubahan"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-        >
+              ? "Publish Berita"
+              : "Simpan Perubahan"}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
           Batal
-        </button>
+        </Button>
+      </div>
+      </form>
+
+      {/* Pratinjau kartu — mencerminkan tampilan listing berita secara
+          langsung sambil admin mengisi form, dibungkus sticky supaya tetap
+          terlihat saat scroll (pola sama dengan FaunaForm/CultureForm/UMKMForm). */}
+      <div className="lg:col-span-1">
+        <div
+          className={`overflow-hidden rounded-2xl border-4 bg-background hard-shadow-md lg:sticky lg:top-6 ${BERITA_ACCENT_BORDERS[0]}`}
+        >
+          <div className="flex items-center gap-2 border-b-2 border-on-surface bg-surface-container-low px-4 py-3">
+            <Eye className="size-4 text-on-surface-variant" aria-hidden="true" />
+            <span className="text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
+              Pratinjau Kartu
+            </span>
+          </div>
+
+          <div className="relative h-48 border-b-2 border-on-surface bg-surface-container-high">
+            {thumbnail ? (
+              <Image src={thumbnail} alt={title || "Pratinjau berita"} fill className="object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-on-surface-variant/40">
+                <Newspaper className="size-14 stroke-[1.25]" aria-hidden="true" />
+              </div>
+            )}
+            <Badge variant="solid-outline" className="absolute right-2 top-2">
+              {village === "soligi" ? "Soligi" : "Kawasi"}
+            </Badge>
+          </div>
+
+          <div className="space-y-1 p-4">
+            <h3 className="line-clamp-2 font-serif text-lg font-black leading-snug text-on-surface">
+              {title || "Judul Berita"}
+            </h3>
+            <p className="text-sm font-bold uppercase tracking-wide text-on-cream">
+              {author || "Admin"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {showSuccess && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up flex items-center gap-2">
-          <span>✅</span>
-          <span>Berita berhasil {isNew ? "dibuat" : "diperbarui"}!</span>
-        </div>
-      )}
-    </form>
+      <Toast show={showSuccess} message={`Berita berhasil ${isNew ? "dibuat" : "diperbarui"}!`} />
+    </div>
   );
 }

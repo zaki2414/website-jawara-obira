@@ -3,13 +3,33 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { generateSlug } from "@/lib/utils";
+import { generateSlug, parseGmapsLocation } from "@/lib/utils";
+import { formatBusinessType } from "@/constants/umkm";
+import { Toast } from "@/components/ui/Toast";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import ImageUploader from "./ImageUploader";
 import ExtraImageUploader from "./ExtraImageUploader";
+import { Sparkles, Package, Images, Upload, Save, X, Eye, Store, MapPin, CheckCircle2, AlertCircle, Home } from "lucide-react";
+import type { UMKMPayload, UMKMGalleryPayload } from "@/lib/supabase/queries";
+import { UMKM_ACCENT_BORDERS } from "./umkm/umkmCardStyles";
+import BangunanPickerMapLoader from "./umkm/BangunanPickerMapLoader";
+import type { VillageKey } from "@/constants/profil";
 
-type UMKMFormProps = { initialData?: any; isNew: boolean };
+export type UMKMFormInitialData = UMKMPayload & {
+  id: string;
+  gallery: (UMKMGalleryPayload & { id: string })[];
+  features: string[];
+  categories: { category_id: string }[];
+  products: { item_name: string; category_id: string | null }[];
+};
+
+type UMKMFormProps = { initialData?: UMKMFormInitialData | null; isNew: boolean };
 type Product = { catId: string; name: string };
+type UMKMCategory = { id: string; name: string; icon: string | null };
+type Village = { id: string; name: string; slug: string };
 
 export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
   const router = useRouter();
@@ -28,6 +48,84 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
   );
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail_url || "");
 
+  const [latitude, setLatitude] = useState<number | null>(
+    initialData?.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    initialData?.longitude ?? null,
+  );
+  const [gmapsInput, setGmapsInput] = useState(
+    initialData?.latitude != null && initialData?.longitude != null
+      ? `${initialData.latitude}, ${initialData.longitude}`
+      : "",
+  );
+  const [gmapsError, setGmapsError] = useState(false);
+  const [gmapsResolving, setGmapsResolving] = useState(false);
+  const [selectedBlok, setSelectedBlok] = useState<string | null>(null);
+
+  const handleGmapsInputChange = (value: string) => {
+    setGmapsInput(value);
+    if (!value.trim()) {
+      setLatitude(null);
+      setLongitude(null);
+      setGmapsError(false);
+      return;
+    }
+    const parsed = parseGmapsLocation(value);
+    if (parsed) {
+      setLatitude(parsed.lat);
+      setLongitude(parsed.lng);
+      setGmapsError(false);
+    } else {
+      setLatitude(null);
+      setLongitude(null);
+      setGmapsError(true);
+    }
+  };
+
+  // Link "Bagikan" dari Google Maps di HP berbentuk maps.app.goo.gl — URL-nya
+  // sendiri TIDAK mengandung koordinat (baru muncul setelah redirect), jadi
+  // parseGmapsLocation di atas pasti gagal untuk link ini. Baru dicoba
+  // resolve ke server saat blur (bukan tiap ketik) supaya tidak fetch
+  // berkali-kali sambil user masih mengetik/menempel.
+  const handleGmapsInputBlur = async () => {
+    if (latitude != null || !gmapsInput.trim().startsWith("http")) return;
+    setGmapsResolving(true);
+    try {
+      const res = await fetch("/api/gmaps/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: gmapsInput.trim() }),
+      });
+      const result = await res.json();
+      if (res.ok && result.lat != null && result.lng != null) {
+        setLatitude(result.lat);
+        setLongitude(result.lng);
+        setGmapsError(false);
+      } else {
+        setGmapsError(true);
+      }
+    } catch {
+      setGmapsError(true);
+    } finally {
+      setGmapsResolving(false);
+    }
+  };
+
+  // Klik rumah di peta kadaster TETAP mengisi latitude/longitude yang sama
+  // dengan field "Lokasi Google Maps" di atas — cuma cara mengisinya beda
+  // (klik poligon rumah asli vs tempel link). Ini satu-satunya sumber
+  // lokasi UMKM; tidak ada kolom feature_id terpisah, jadi hasil klik di
+  // sini dijamin match ke poligon kadaster (bukan sekadar dekat/kira-kira
+  // seperti pin Google Maps yang presisinya tidak terjamin).
+  const handleBuildingSelect = ({ lat, lng, blok }: { lat: number; lng: number; blok: string | null }) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    setGmapsInput(`${lat}, ${lng}`);
+    setGmapsError(false);
+    setSelectedBlok(blok);
+  };
+
   const [features, setFeatures] = useState<string[]>(
     initialData?.features || [],
   );
@@ -37,35 +135,29 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
   );
 
   const defaultGallery = initialData?.gallery || [];
-  const [gallery, setGallery] = useState([
-    {
-      url: defaultGallery[0]?.url || "",
-      caption: defaultGallery[0]?.caption || "",
-    },
-    {
-      url: defaultGallery[1]?.url || "",
-      caption: defaultGallery[1]?.caption || "",
-    },
-    {
-      url: defaultGallery[2]?.url || "",
-      caption: defaultGallery[2]?.caption || "",
-    },
-    {
-      url: defaultGallery[3]?.url || "",
-      caption: defaultGallery[3]?.caption || "",
-    },
-    {
-      url: defaultGallery[4]?.url || "",
-      caption: defaultGallery[4]?.caption || "",
-    },
-  ]);
-
-  const [products, setProducts] = useState<Product[]>(
-    initialData?.products || [],
+  const [gallery, setGallery] = useState(
+    Array.from({ length: 5 }, (_, i) => ({
+      url: defaultGallery[i]?.image_url || "",
+      caption: defaultGallery[i]?.caption || "",
+    })),
   );
 
-  const [categories, setCategories] = useState<any[]>([]);
-  const [villages, setVillages] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>(
+    initialData?.products?.map((p) => ({
+      catId: p.category_id || "",
+      name: p.item_name,
+    })) || [],
+  );
+
+  const [categories, setCategories] = useState<UMKMCategory[]>([]);
+  const [villages, setVillages] = useState<Village[]>([]);
+
+  // "kawasi"/"soligi" dari villages.slug (bukan village_id UUID) — dipakai
+  // BangunanPickerMapLoader untuk tahu geojson desa mana yang perlu
+  // di-load. undefined kalau desa belum dipilih ATAU villages.slug bukan
+  // salah satu dari dua desa yang punya data kadaster.
+  const villageSlug = villages.find((v) => v.id === village)?.slug as VillageKey | undefined;
+  const hasCadastralData = villageSlug === "kawasi" || villageSlug === "soligi";
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
@@ -107,6 +199,12 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
     setFullDesc("");
     setLocationText("");
     setThumbnail("");
+    setGmapsInput("");
+    setLatitude(null);
+    setLongitude(null);
+    setGmapsError(false);
+    setGmapsResolving(false);
+    setSelectedBlok(null);
     setFeatures([]);
     setFeaturesInput("");
     setVillage("");
@@ -144,6 +242,8 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
         full_description: fullDesc,
         location_text: locationText,
         thumbnail_url: thumbnail || null,
+        latitude,
+        longitude,
       };
 
       let umkmId = initialData?.id;
@@ -235,7 +335,7 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
 
       setMessage({
         type: "success",
-        text: `✅ UMKM ${isNew ? "ditambahkan" : "diperbarui"}!`,
+        text: `UMKM ${isNew ? "ditambahkan" : "diperbarui"}!`,
       });
       setShowSuccess(true);
 
@@ -244,9 +344,10 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
       } else {
         setTimeout(() => router.push("/admin/umkm"), 1500);
       }
-    } catch (err: any) {
-      console.error("❌ Submit error:", err);
-      setMessage({ type: "error", text: `❌ Gagal: ${err.message}` });
+    } catch (err) {
+      const errMessage = err instanceof Error ? err.message : "Terjadi kesalahan tidak dikenal";
+      console.error("Submit error:", err);
+      setMessage({ type: "error", text: `Gagal: ${errMessage}` });
     } finally {
       setLoading(false);
     }
@@ -280,13 +381,15 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-xl shadow-sm border border-sand-200 space-y-6"
-    >
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 rounded-2xl border-2 border-on-surface bg-background p-6 hard-shadow-md lg:col-span-2"
+      >
       {message && (
         <div
-          className={`p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+          role="alert"
+          className={`flex items-center gap-2 p-3 rounded-lg border-2 text-sm font-bold ${message.type === "success" ? "bg-success/10 text-success border-success/30" : "bg-error-container text-error border-error/30"}`}
         >
           {message.text}
         </div>
@@ -295,31 +398,31 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
       {/* Form Fields Utama */}
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Nama UMKM *</label>
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">Nama UMKM *</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Slug *</label>
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">Slug *</label>
           <input
             value={slug}
             onChange={(e) => handleSlugChange(e.target.value)}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500 font-mono text-sm"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono text-sm"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
             Jenis Usaha *
           </label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           >
             <option value="toko">Toko / Warung Kelontong</option>
             <option value="warung_makan">Warung Makan</option>
@@ -329,13 +432,12 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Desa</label>
+          <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">Desa</label>
           <select
             value={village}
             onChange={(e) => setVillage(e.target.value)}
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+            className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           >
-            <option value="">Umum / Tidak Spesifik</option>
             {villages.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name}
@@ -343,45 +445,118 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
             ))}
           </select>
           {villages.length === 0 && (
-            <p className="text-xs text-gray-400 mt-1">Memuat data desa...</p>
+            <p className="text-xs text-on-surface-variant/60 mt-1">Memuat data desa...</p>
           )}
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Lokasi Singkat</label>
+        <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">Lokasi Singkat</label>
         <input
           value={locationText}
           onChange={(e) => setLocationText(e.target.value)}
           placeholder="Contoh: dekat pelabuhan"
-          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+          className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+          Lokasi Google Maps
+        </label>
+        <input
+          value={gmapsInput}
+          onChange={(e) => handleGmapsInputChange(e.target.value)}
+          onBlur={handleGmapsInputBlur}
+          placeholder="Tempel link share Google Maps, atau 'lat, lng'"
+          className={`w-full p-3 border-2 rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 ${gmapsError ? "border-error focus:border-error" : "border-on-surface focus:border-primary"}`}
+        />
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs">
+          {gmapsResolving ? (
+            <span className="text-on-surface-variant/60">Membuka link Google Maps...</span>
+          ) : gmapsError ? (
+            <span className="flex items-center gap-1 text-error">
+              <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
+              Link/koordinat tidak dikenali — coba link lengkap dari browser (bukan link pendek), atau koordinat &ldquo;lat, lng&rdquo;.
+            </span>
+          ) : latitude != null && longitude != null ? (
+            <span className="flex items-center gap-1 text-success">
+              <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+              Lokasi terbaca: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+            </span>
+          ) : (
+            <span className="text-on-surface-variant/60">
+              Buka Google Maps → klik kanan lokasi → salin koordinat, atau bagikan link lokasinya ke sini.
+            </span>
+          )}
+        </p>
+        {latitude != null && longitude != null && (
+          <div className="mt-2 h-40 overflow-hidden rounded-lg border-2 border-on-surface">
+            <iframe
+              title="Pratinjau lokasi Google Maps"
+              src={`https://www.google.com/maps?q=${latitude},${longitude}&z=17&output=embed`}
+              className="h-full w-full border-0"
+              loading="lazy"
+            />
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1.5 flex items-center gap-2 text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
+          <Home className="size-4 shrink-0" aria-hidden="true" />
+          Atau, Klik Rumah di Peta Kadaster
+        </label>
+        {hasCadastralData ? (
+          <>
+            <p className="mb-2 text-xs text-on-surface-variant/70">
+              Lebih presisi dari link Google Maps — klik langsung menjamin lokasinya nyambung ke
+              peta desa di web ini (halaman Profil).
+            </p>
+            <BangunanPickerMapLoader
+              key={villageSlug}
+              village={villageSlug as VillageKey}
+              value={latitude != null && longitude != null ? { lat: latitude, lng: longitude } : null}
+              onSelect={handleBuildingSelect}
+            />
+            {selectedBlok && (
+              <p className="mt-1.5 flex items-center gap-1 text-xs text-success">
+                <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+                Bangunan terpilih — Blok/Dusun: {selectedBlok}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="rounded-lg border-2 border-dashed border-outline-variant p-3 text-xs text-on-surface-variant/70">
+            Pilih Desa (Kawasi/Soligi) dulu di atas untuk menampilkan peta kadaster.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
           Deskripsi Singkat (untuk card)
         </label>
         <textarea
           value={shortDesc}
           onChange={(e) => setShortDesc(e.target.value)}
           rows={2}
-          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+          className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
           Cerita Lengkap / Tentang
         </label>
         <textarea
           value={fullDesc}
           onChange={(e) => setFullDesc(e.target.value)}
           rows={4}
-          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+          className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>
 
       {/* Thumbnail */}
-      <div className="border-t border-sand-200 pt-4">
+      <div className="border-t-2 border-dashed border-outline-variant pt-4">
         <h3 className="font-medium mb-2">Thumbnail Utama</h3>
         <ImageUploader
           key={`thumb-${formKey}`}
@@ -392,9 +567,11 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
       </div>
 
       {/* Features */}
-      <div className="border-t border-sand-200 pt-4">
-        <h3 className="font-medium mb-2">✨ Highlight / Badge</h3>
-        <p className="text-xs text-gray-500 mb-2">Pisahkan dengan koma (,)</p>
+      <div className="border-t-2 border-dashed border-outline-variant pt-4">
+        <h3 className="font-black text-on-surface mb-2 flex items-center gap-2">
+          <Sparkles className="size-4" aria-hidden="true" /> Highlight / Badge
+        </h3>
+        <p className="text-xs text-on-surface-variant mb-2">Pisahkan dengan koma (,)</p>
         <input
           type="text"
           value={featuresInput}
@@ -412,15 +589,17 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
             setFeaturesInput(features.join(", "));
           }}
           placeholder="buka malam, token listrik, dekat pelabuhan"
-          className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-ocean-500"
+          className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>
 
       {/* Products */}
-      <div className="border-t border-sand-200 pt-4">
-        <h3 className="font-medium mb-2">📦 Daftar Barang/Jasa</h3>
+      <div className="border-t-2 border-dashed border-outline-variant pt-4">
+        <h3 className="font-black text-on-surface mb-2 flex items-center gap-2">
+          <Package className="size-4" aria-hidden="true" /> Daftar Barang/Jasa
+        </h3>
         {categories.length === 0 && (
-          <p className="text-xs text-gray-400 mb-2">Memuat kategori...</p>
+          <p className="text-xs text-on-surface-variant/60 mb-2">Memuat kategori...</p>
         )}
         <div className="space-y-2">
           {products.map((p, i) => (
@@ -428,7 +607,7 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
               <select
                 value={p.catId}
                 onChange={(e) => updateProduct(i, "catId", e.target.value)}
-                className="w-1/3 p-2 border rounded-lg text-sm bg-white"
+                className="w-1/3 p-2 border-2 border-on-surface rounded-lg text-sm bg-background text-on-surface"
               >
                 <option value="">Pilih Kategori</option>
                 {categories.map((cat) => (
@@ -441,31 +620,30 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
                 value={p.name}
                 onChange={(e) => updateProduct(i, "name", e.target.value)}
                 placeholder="Nama barang (misal: Beras 5kg)"
-                className="flex-1 p-2 border rounded-lg text-sm"
+                className="flex-1 p-2 border-2 border-on-surface rounded-lg text-sm bg-background text-on-surface"
               />
               <button
                 type="button"
                 onClick={() => removeProduct(i)}
-                className="px-3 text-red-600 hover:bg-red-50 rounded"
+                aria-label={`Hapus barang ${p.name || i + 1}`}
+                className="px-3 text-error hover:bg-error-container rounded-lg border-2 border-transparent hover:border-error/30 transition-colors"
               >
-                ✕
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addProduct}
-            className="text-sm text-ocean-600 hover:underline"
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={addProduct}>
             + Tambah Barang
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Gallery */}
-      <div className="border-t border-sand-200 pt-4">
-        <h3 className="font-medium mb-2">📸 Galeri UMKM (Maks 5 Foto)</h3>
-        <p className="text-xs text-gray-500 mb-4">
+      <div className="border-t-2 border-dashed border-outline-variant pt-4">
+        <h3 className="font-black text-on-surface mb-2 flex items-center gap-2">
+          <Images className="size-4" aria-hidden="true" /> Galeri UMKM (Maks 5 Foto)
+        </h3>
+        <p className="text-xs text-on-surface-variant mb-4">
           Tambahkan foto-foto UMKM untuk galeri.
         </p>
         <div className="grid md:grid-cols-2 gap-6">
@@ -484,30 +662,62 @@ export default function UMKMForm({ initialData, isNew }: UMKMFormProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4 pt-4 border-t border-sand-200">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-3 bg-ocean-600 text-ocean-600 font-semibold rounded-lg hover:bg-ocean-700 transition disabled:opacity-50"
-        >
-          {loading ? "Menyimpan..." : isNew ? "📤 Simpan UMKM" : "💾 Update"}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-        >
+      <div className="flex gap-4 pt-4 border-t-2 border-dashed border-outline-variant">
+        <Button type="submit" variant="cream" loading={loading}>
+          {!loading && (isNew ? <Upload className="size-4" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />)}
+          {loading ? "Menyimpan..." : isNew ? "Simpan UMKM" : "Update"}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => router.back()}>
           Batal
-        </button>
+        </Button>
+      </div>
+      </form>
+
+      {/* Pratinjau kartu — mencerminkan tampilan direktori UMKM secara
+          langsung sambil admin mengisi form, dibungkus sticky supaya tetap
+          terlihat saat scroll (pola sama dengan FaunaForm/CultureForm). */}
+      <div className="lg:col-span-1">
+        <div
+          className={`overflow-hidden rounded-2xl border-4 bg-background hard-shadow-md lg:sticky lg:top-6 ${UMKM_ACCENT_BORDERS[0]}`}
+        >
+          <div className="flex items-center gap-2 border-b-2 border-on-surface bg-surface-container-low px-4 py-3">
+            <Eye className="size-4 text-on-surface-variant" aria-hidden="true" />
+            <span className="text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
+              Pratinjau Kartu
+            </span>
+          </div>
+
+          <div className="relative h-48 border-b-2 border-on-surface bg-surface-container-high">
+            {thumbnail ? (
+              <Image src={thumbnail} alt={name || "Pratinjau UMKM"} fill className="object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-on-surface-variant/40">
+                <Store className="size-14 stroke-[1.25]" aria-hidden="true" />
+              </div>
+            )}
+            <Badge variant="solid-cream" className="absolute right-2 top-2">
+              {formatBusinessType(type) || "Jenis Usaha"}
+            </Badge>
+          </div>
+
+          <div className="space-y-1 p-4">
+            <h3 className="font-serif text-lg font-black leading-snug text-on-surface">
+              {name || "Nama UMKM"}
+            </h3>
+            {locationText && (
+              <p className="flex items-center gap-1.5 text-sm text-on-surface-variant">
+                <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
+                {locationText}
+              </p>
+            )}
+            <p className="line-clamp-2 text-sm text-on-surface-variant">
+              {shortDesc || "Deskripsi singkat akan tampil di sini."}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Toast Success */}
-      {showSuccess && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-ocean-600 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up flex items-center gap-2">
-          <span>✅</span>
-          <span>UMKM berhasil {isNew ? "ditambahkan" : "diperbarui"}!</span>
-        </div>
-      )}
-    </form>
+      <Toast show={showSuccess} message={`UMKM berhasil ${isNew ? "ditambahkan" : "diperbarui"}!`} />
+    </div>
   );
 }
