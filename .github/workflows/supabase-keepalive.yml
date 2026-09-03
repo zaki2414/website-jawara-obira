@@ -1,0 +1,25 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Setiap Senin & Kamis jam 03:00 UTC — 2x seminggu, jauh di bawah
+    # ambang batas 7 hari tanpa aktivitas yang bikin Supabase pause project.
+    - cron: "0 3 * * 1,4"
+  workflow_dispatch: {} # bisa dipicu manual dari tab Actions untuk tes
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query tabel villages via PostgREST
+        run: |
+          http_code=$(curl -s -o /tmp/body.json -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/villages?select=id&limit=1")
+          echo "HTTP status: $http_code"
+          cat /tmp/body.json
+          if [ "$http_code" -ge 300 ]; then
+            echo "Ping gagal dengan status $http_code"
+            exit 1
+          fi
