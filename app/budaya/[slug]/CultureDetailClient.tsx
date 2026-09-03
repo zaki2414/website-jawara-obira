@@ -71,7 +71,7 @@ export default function CultureDetailClient({
       {/* ─── BRAND IDENTITY CANVAS LAYER (IMAGE BACKGROUND) ─── */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply select-none">
         <Image
-          src="/Background Hero Culture.JPG"
+          src="/Background Hero Culture.jpg"
           alt=""
           aria-hidden="true"
           fill

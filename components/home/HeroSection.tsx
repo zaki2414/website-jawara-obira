@@ -36,7 +36,7 @@ export function HeroSection({ villages }: HeroSectionProps) {
           className="relative w-full h-[115%] top-[-5%] transform-gpu will-change-transform"
         >
           <Image
-            src="/Background Hero Home.png"
+            src="/Background Hero Home.jpg"
             alt=""
             fill
             priority

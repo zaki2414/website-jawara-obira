@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, Award, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui";
+import { Reveal } from "@/components/shared/Reveal";
 import type { Proker, ProkerDocumentation, KKNStats } from "@/constants/home";
 
 type KKNSectionProps = {
@@ -46,21 +47,6 @@ export function KKNSection({
     },
   ];
 
-  // --- ANIMATION VARIANTS (SNAPPY SPRING BLOCKS) ---
-  const containerVariants = {
-    hidden: {},
-    visible: { transition: { staggerChildren: 0.1 } },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { type: "spring" as const, stiffness: 140, damping: 14 },
-    },
-  };
-
   return (
     <section
       ref={sectionRef}
@@ -90,65 +76,55 @@ export function KKNSection({
       <div className="relative max-w-7xl mx-auto px-6 z-10">
         {/* 2. HERO GRID: TEXT CONTENT & VISUAL PLAYGROUND */}
         <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
-          {/* Left Content Column */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
-            className="space-y-8"
-          >
-            <motion.div
-              variants={itemVariants}
+          {/* Left Content Column — entrance lewat <Reveal> (GSAP), bukan
+              framer-motion variants yang di-gate useInView. Pola lama
+              menyimpan opacity:0 di markup, jadi seluruh kolom ini jadi
+              blok biru kosong kalau observer-nya tidak pernah fire. */}
+          <Reveal kind="stagger" className="space-y-8">
+            <span
+              data-reveal-item
               className="inline-block bg-natural-paper text-on-surface border-4 border-on-surface px-6 py-2 font-black text-xs uppercase tracking-widest hard-shadow-sm rounded-full"
-              whileHover={{ scale: 1.05, rotate: -1 }}
             >
               Program Pengabdian
-            </motion.div>
+            </span>
 
-            <motion.h2
-              variants={itemVariants}
-              className="font-serif text-6xl md:text-7xl font-black leading-tight"
+            <h2
+              data-reveal-item
+              className="font-serif text-6xl md:text-7xl font-black leading-[1.05] text-balance"
             >
               KKN UGM
               <br />
-              <span className="italic text-tertiary font-normal">
-                Jawara Obira
-              </span>
-            </motion.h2>
+              <span className="italic text-tertiary font-normal">Jawara Obira</span>
+            </h2>
 
-            <motion.p
-              variants={itemVariants}
-              className="text-lg opacity-90 leading-relaxed font-medium max-w-lg"
+            <p
+              data-reveal-item
+              className="text-body-lg opacity-90 leading-relaxed font-medium max-w-[58ch] text-pretty"
             >
               Sinergi civitas akademika Universitas Gadjah Mada yang
               mendedikasikan program kerja berbasis digitalisasi spasial,
               inventarisasi alam, dan penguatan komoditas desa.
-            </motion.p>
+            </p>
 
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-wrap gap-4 pt-2"
-            >
-              {ctaButtons.map((btn, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.98 }}
+            <div data-reveal-item className="flex flex-wrap gap-4 pt-2">
+              {ctaButtons.map((btn) => (
+                <Button
+                  key={btn.href}
+                  asChild
+                  variant="outline"
+                  className="h-auto rounded-full border-4 bg-natural-paper px-8 py-4 has-[>svg]:px-8 hard-shadow hard-shadow-hover press-effect"
                 >
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="h-auto rounded-full border-4 bg-natural-paper px-8 py-4 has-[>svg]:px-8 hard-shadow hard-shadow-hover"
-                  >
-                    <Link href={btn.href}>
-                      <btn.icon className="size-5 group-hover/button:rotate-12 transition-transform duration-200" aria-hidden="true" />
-                      {btn.label}
-                    </Link>
-                  </Button>
-                </motion.div>
+                  <Link href={btn.href}>
+                    <btn.icon
+                      className="size-5 transition-transform duration-[--duration-panel] ease-[--ease-out] group-hover/button:rotate-12"
+                      aria-hidden="true"
+                    />
+                    {btn.label}
+                  </Link>
+                </Button>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+          </Reveal>
 
           {/* Right Visual Column (Floating Stack Cards) — dokumentasi 2
               proker unggulan PERTAMA (bukan file placeholder statis, itu
@@ -269,51 +245,35 @@ export function KKNSection({
                   Unggulan
                 </span>
               </h3>
-              <motion.div
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.98 }}
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto rounded-full border-4 bg-natural-paper px-6 py-3 has-[>svg]:px-6 hard-shadow hard-shadow-hover press-effect"
               >
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-auto rounded-full border-4 bg-natural-paper px-6 py-3 has-[>svg]:px-6 hard-shadow hard-shadow-hover"
-                >
-                  <Link href="/kkn/proker">
-                    Lihat Semua
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </motion.div>
+                <Link href="/kkn/proker">
+                  Lihat Semua
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
             </div>
 
             {/* Cards Display Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredProkers.map((proker, i) => {
+            <Reveal kind="stagger" className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredProkers.map((proker) => {
                 const docs = parseJsonField(proker.documentation);
                 const thumb =
                   docs[0]?.url || docs[0]?.image_url || proker.image_url;
                 const metrics = proker.impact_metrics || {};
 
                 return (
-                  <motion.div
-                    key={proker.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{
-                      delay: 0.3 + i * 0.1,
-                      type: "spring" as const,
-                      stiffness: 120,
-                    }}
-                    whileHover={{ y: -10 }}
-                    className="h-full"
-                  >
+                  <div key={proker.id} data-reveal-item className="h-full">
                     <Link
                       href={`/kkn/proker/${proker.slug}`}
-                      className="group block bg-natural-paper text-on-surface rounded-2xl overflow-hidden border-4 border-on-surface h-full hard-shadow hard-shadow-hover transition-all duration-300 relative"
+                      className="group block bg-natural-paper text-on-surface rounded-2xl overflow-hidden border-4 border-on-surface h-full hard-shadow hard-shadow-hover press-effect relative"
                     >
                       {/* Mix-Blend Ornament inside Card */}
                       <motion.div
-                        className="absolute -right-4 -bottom-4 w-28 h-28 opacity-0 mix-blend-multiply pointer-events-none z-0 select-none transition-all duration-500 group-hover:opacity-[0.15] group-hover:scale-110"
+                        className="absolute -right-4 -bottom-4 w-28 h-28 opacity-0 mix-blend-multiply pointer-events-none z-0 select-none transition-[opacity,transform] duration-500 ease-[--ease-out] group-hover:opacity-[0.15] group-hover:scale-110"
                         animate={{ rotate: 360 }}
                         transition={{
                           duration: 20,
@@ -333,7 +293,7 @@ export function KKNSection({
                       {/* Header Image Frame */}
                       <div className="relative h-48 bg-primary-container/20 overflow-hidden border-on-surface">
                         {thumb ? (
-                          <div className="w-full h-full overflow-hidden">
+                          <div className="relative w-full h-full overflow-hidden">
                             <Image
                               src={thumb}
                               alt={proker.title}
@@ -388,10 +348,10 @@ export function KKNSection({
                           )}
                       </div>
                     </Link>
-                  </motion.div>
+                  </div>
                 );
               })}
-            </div>
+            </Reveal>
           </div>
         )}
       </div>

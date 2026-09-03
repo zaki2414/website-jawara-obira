@@ -20,9 +20,9 @@ export default function Navbar() {
     async function checkAdmin() {
       try {
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user) {
           setCheckingAdmin(false);
           return;
         }
@@ -30,7 +30,7 @@ export default function Navbar() {
         const { data, error } = await supabase
           .from("admin_users")
           .select("role")
-          .eq("id", user.id)
+          .eq("id", session.user.id)
           .single();
 
         if (!error && data?.role === "admin") setIsAdmin(true);

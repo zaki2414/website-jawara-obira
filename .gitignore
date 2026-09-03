@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ui audit scratch (screenshots, playwright scripts)
+.ui-audit/

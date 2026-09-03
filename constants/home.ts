@@ -128,9 +128,16 @@ export const HERO_WORDS = ["Selamat Datang", "di Pulau Obi"];
 // diupdate.
 export const APPROX_POPULATION = 1200;
 
+// Format angka statistik dinyatakan sebagai NAMA format (string), bukan
+// fungsi. StatsSection adalah Server Component yang mengoper nilai ini ke
+// CounterNumber (Client Component), dan fungsi tidak bisa melintasi batas
+// server->client — React akan melempar "Functions cannot be passed directly
+// to Client Components". Pemetaan nama -> format ada di CounterNumber.tsx.
+export type StatFormat = "plain" | "plus" | "grouped-plus";
+
 export const STATS_CARDS = [
-  { icon: Birdhouse, key: "desa", label: "Desa", formatter: (v: number) => v.toString() },
-  { icon: User, key: "penduduk", label: "Penduduk", formatter: (v: number) => `${v.toLocaleString("id-ID")}+` },
-  { icon: BriefcaseBusiness, key: "proker", label: "Program Kerja", formatter: (v: number) => `${v}+` },
-  { icon: Store, key: "umkm", label: "UMKM Aktif", formatter: (v: number) => `${v}+` },
+  { icon: Birdhouse, key: "desa", label: "Desa", format: "plain" as StatFormat },
+  { icon: User, key: "penduduk", label: "Penduduk", format: "grouped-plus" as StatFormat },
+  { icon: BriefcaseBusiness, key: "proker", label: "Program Kerja", format: "plus" as StatFormat },
+  { icon: Store, key: "umkm", label: "UMKM Aktif", format: "plus" as StatFormat },
 ] as const;
