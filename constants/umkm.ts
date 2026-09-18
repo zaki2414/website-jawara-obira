@@ -1,5 +1,9 @@
 import type { Variants } from "framer-motion";
-import { Store, Search, MapPin, Sparkles, Filter } from "lucide-react";
+import {
+  Store, Search, MapPin, Sparkles, Filter,
+  UtensilsCrossed, Fish, Wrench, Palette, LayoutGrid,
+  type LucideIcon,
+} from "lucide-react";
 
 // ==========================================
 // TIPE DATA
@@ -163,6 +167,10 @@ export const BUSINESS_ACCENT_STYLES: Record<
     panel: string;
     border: string;
     text: string;
+    /** Warna judul kartu saat hover — kelas LITERAL, bukan `group-hover:${text}`,
+     *  karena Tailwind memindai kelas dari sumber dan tidak pernah melihat
+     *  kelas yang dirakit saat runtime. */
+    hoverText: string;
   }
 > = {
   primary: {
@@ -174,6 +182,7 @@ export const BUSINESS_ACCENT_STYLES: Record<
     panel: "bg-secondary-container/25 border-secondary",
     border: "border-primary",
     text: "text-primary",
+    hoverText: "group-hover:text-primary-container",
   },
   tertiary: {
     badge: "solid-tertiary",
@@ -184,6 +193,7 @@ export const BUSINESS_ACCENT_STYLES: Record<
     panel: "bg-tertiary-container/35 border-tertiary",
     border: "border-tertiary",
     text: "text-on-tertiary",
+    hoverText: "group-hover:text-tertiary",
   },
   cream: {
     badge: "solid-cream",
@@ -194,6 +204,7 @@ export const BUSINESS_ACCENT_STYLES: Record<
     panel: "bg-cream/50 border-on-surface",
     border: "border-on-surface",
     text: "text-on-surface",
+    hoverText: "group-hover:text-on-cream",
   },
 };
 
@@ -201,6 +212,52 @@ export const BUSINESS_ACCENT_STYLES: Record<
 export const UMKM_ICONS = {
   Store, Search, MapPin, Sparkles, Filter,
 };
+
+// Ikon per jenis usaha — SVG lucide, BUKAN emoji.
+//
+// Field `emoji` di UMKM_BUSINESS_TYPES masih dipakai <option> dropdown asli
+// (elemen select tidak bisa memuat SVG), tapi di mana pun kita menggambar
+// chrome sendiri (rail direktori, judul kelompok) ikon inilah yang dipakai:
+// emoji dirender berbeda-beda per sistem operasi, ukurannya ikut font, dan
+// warnanya tidak bisa diikat ke palet — jadi ia tidak pernah sebaris dengan
+// ikon lucide lain di situs ini.
+export const UMKM_TYPE_ICONS: Record<string, LucideIcon> = {
+  all: LayoutGrid,
+  toko: Store,
+  warung_makan: UtensilsCrossed,
+  hasil_laut: Fish,
+  jasa: Wrench,
+  kerajinan: Palette,
+  // Nilai yang dipakai admin di lapangan tapi tidak pernah masuk daftar
+  // UMKM_BUSINESS_TYPES di atas (lihat catatan normalizeBusinessType).
+  produk: Store,
+  kuliner: UtensilsCrossed,
+};
+
+// ── Ketahanan terhadap data nyata ────────────────────────────────────────
+// Nilai `business_type` di database TIDAK terbatas pada daftar di atas: form
+// admin membiarkan admin mengetik bebas, jadi yang benar-benar tersimpan
+// adalah "Produk" (14), "Jasa" (1), "Kuliner" (1), "warung_makan" (1) —
+// kapitalisasi campur, dua di antaranya tidak pernah ada di konstanta.
+// Akibatnya, sebelum ini, 16 dari 17 usaha tidak bisa disaring lewat UI.
+//
+// Selama form admin belum dibatasi ke daftar tetap, sisi baca WAJIB
+// menormalkan: bandingkan tanpa peduli besar-kecil huruf, dan tampilkan
+// label apa adanya untuk nilai yang tidak dikenal alih-alih menyembunyikannya.
+export function normalizeBusinessType(value?: string | null): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
+export function resolveBusinessTypeLabel(value?: string | null): string {
+  const key = normalizeBusinessType(value);
+  const known = UMKM_BUSINESS_TYPES.find((t) => t.value === key);
+  if (known) return known.label;
+  if (!key) return "Lainnya";
+  // Nilai tak dikenal tetap ditampilkan, dirapikan seperlunya.
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 // ==========================================
 // DETAIL PAGE - TYPES

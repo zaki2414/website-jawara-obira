@@ -14,7 +14,7 @@ export default function Footer() {
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-primary border-2 border-on-surface rounded text-background">
                 <Image
-                  src="/Logo Obi.svg"
+                  src="/Logo Obi Kuning.svg"
                   alt="Logo Jawara Obira"
                   width={20}
                   height={20}

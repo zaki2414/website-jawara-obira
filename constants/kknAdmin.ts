@@ -6,10 +6,6 @@ import { Users, NotebookPen, Rocket, type LucideIcon } from "lucide-react";
 // Key di-resolve ke komponen ikon aslinya di dalam KKNMenuCard.tsx sendiri.
 export type KKNHubIconKey = "users" | "notebook-pen" | "rocket";
 
-// Ukuran tile bento — hanya 2 tingkat karena cuma 3 menu di hub ini:
-// "feature" (besar, 2x2) dan "compact" (kecil, 1x1). Lihat KKNMenuGrid.tsx.
-export type KKNHubTileSize = "feature" | "compact";
-
 // Tidak ada field "accent" 3-warna seperti dashboard utama — seluruh section
 // KKN (hub + tim/jurnal/proker) sengaja satu keluarga biru. "tone" di bawah
 // cuma membedakan SHADE biru per kartu (lihat TONE_STYLES di KKNMenuCard.tsx):
@@ -24,7 +20,6 @@ export type KKNHubMenuItem = {
   href: string;
   icon: KKNHubIconKey;
   action: string;
-  size: KKNHubTileSize;
   tone: KKNHubTone;
 };
 
@@ -36,7 +31,6 @@ export const KKN_HUB_MENU_ITEMS: KKNHubMenuItem[] = [
     href: "/admin/kkn/tim",
     icon: "users",
     action: "Atur Anggota",
-    size: "feature",
     tone: "medium",
   },
   {
@@ -45,7 +39,6 @@ export const KKN_HUB_MENU_ITEMS: KKNHubMenuItem[] = [
     href: "/admin/kkn/jurnal",
     icon: "notebook-pen",
     action: "Kelola Jurnal",
-    size: "compact",
     tone: "dark",
   },
   {
@@ -54,7 +47,6 @@ export const KKN_HUB_MENU_ITEMS: KKNHubMenuItem[] = [
     href: "/admin/kkn/proker",
     icon: "rocket",
     action: "Kelola Proker",
-    size: "compact",
     tone: "light",
   },
 ];

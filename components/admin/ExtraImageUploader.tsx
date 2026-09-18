@@ -119,7 +119,7 @@ export default function ExtraImageUploader({
             value={captionInput}
             onChange={handleCaptionChange}
             placeholder="Keterangan gambar (opsional)"
-            className="w-full p-2 text-sm border-2 border-on-surface rounded-lg bg-background text-on-surface focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all"
+            className="w-full p-2 text-sm border-2 border-on-surface rounded-lg bg-background text-on-surface focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-colors"
           />
         </div>
       )}

@@ -30,7 +30,7 @@ export function AnimatedBadge({
         className,
       )}
       whileHover={
-        animated ? { scale: 1.03, boxShadow: "3px 3px 0px rgb(0 0 0 / 0.9)" } : undefined
+        animated ? { scale: 1.03, boxShadow: "3px 3px 0px rgb(29 28 24 / 0.9)" } : undefined
       }
     >
       {Icon && animated && (

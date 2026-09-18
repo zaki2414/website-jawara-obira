@@ -1,9 +1,11 @@
-import { RotatingHiasanBackground } from "@/components/shared/RotatingHiasanBackground";
+import { PageOrnament, PaperTexture } from "@/components/shared/PageOrnament";
 
-/**
- * Identitas ornamen halaman fauna-obi — Hiasan 2.svg (dibedakan dari
- * Hiasan 1/3/4/5.svg milik profil/toga/budaya/umkm).
- */
+/** Identitas ornamen halaman Fauna — motif 2, tepi kanan tengah. */
 export function FaunaPageBackground() {
-  return <RotatingHiasanBackground hiasan={2} density="elegant" />;
+  return (
+    <>
+      <PaperTexture opacity={0.045} />
+      <PageOrnament motif={2} placement="top-right" size="xl" opacity={0.06} marks={3} counterMotif={5} />
+    </>
+  );
 }

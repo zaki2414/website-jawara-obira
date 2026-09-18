@@ -50,7 +50,7 @@ export function CultureCard({ item, index, large = false }: CultureCardProps) {
           </div>
         )}
         <h2
-          className={`font-serif font-black text-on-surface group-hover:text-primary transition-colors leading-tight mb-1 line-clamp-2 ${
+          className={`font-serif font-black text-on-surface ${styles.hoverText} transition-colors leading-tight mb-1 line-clamp-2 ${
             large ? "text-2xl md:text-3xl" : "text-2xl min-h-14"
           }`}
         >
@@ -59,7 +59,7 @@ export function CultureCard({ item, index, large = false }: CultureCardProps) {
       </div>
 
       <div className="flex items-center justify-between border-t border-dashed border-outline-variant pt-3 mt-auto shrink-0">
-        <span className="text-label-sm font-black uppercase tracking-widest text-on-surface-variant group-hover:text-primary transition-colors duration-200">
+        <span className={`text-label-sm font-black uppercase tracking-widest text-on-surface-variant ${styles.hoverText} transition-colors duration-200`}>
           Baca Selengkapnya
         </span>
         <div className="w-7 h-7 rounded-lg bg-background border-2 border-on-surface flex items-center justify-center group-hover:bg-primary group-hover:text-on-primary group-hover:hard-shadow-sm transition-all duration-300">

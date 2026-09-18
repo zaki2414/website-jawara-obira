@@ -10,7 +10,7 @@ type ToastProps = {
 
 /**
  * Toast konfirmasi sukses — dipakai form admin (CultureForm, FaunaForm, KKNJournalForm,
- * KKNProkerForm, NewsForm, UMKMForm) yang sebelumnya masing-masing menulis ulang div
+ * KKNProkerForm, UMKMForm) yang sebelumnya masing-masing menulis ulang div
  * `fixed bottom-6 right-6 ...` yang sama persis (salah satunya bahkan salah pasang warna
  * teks sehingga kontrasnya buruk).
  */

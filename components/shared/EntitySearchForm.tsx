@@ -2,7 +2,8 @@
 
 import { motion, type Variants } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import type { LucideIcon } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
+import { DOMAIN_ACCENT, type DomainKey } from "@/constants/domainAccent";
 
 type FilterOption = {
   value: string;
@@ -23,6 +24,13 @@ type EntitySearchFormProps = {
   SearchIcon: LucideIcon;
   /** Ikon tombol submit. Default ke SearchIcon kalau tidak diisi (varian search-only). */
   FilterIcon?: LucideIcon;
+  /**
+   * Domain pemilik form ini. Menentukan warna tombol submit supaya kontrol
+   * ikut aksen halamannya — sebelumnya tombol selalu biru primary, jadi di
+   * halaman TOGA (hijau) dan Budaya (emas) ia terbaca sebagai benda asing
+   * yang nyasar dari halaman lain. Default primary bila tidak diisi.
+   */
+  accent?: DomainKey;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
 };
 
@@ -36,9 +44,11 @@ export function EntitySearchForm({
   filterLabel,
   SearchIcon,
   FilterIcon,
+  accent,
   onSubmit,
 }: EntitySearchFormProps) {
   const SubmitIcon = FilterIcon ?? SearchIcon;
+  const submitTone = accent ? DOMAIN_ACCENT[accent].chip : "bg-primary text-on-primary";
   const { ref, inView } = useInView({ threshold: 0.3, triggerOnce: true });
 
   return (
@@ -77,16 +87,20 @@ export function EntitySearchForm({
               </option>
             ))}
           </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none font-black text-xs text-on-surface-variant group-focus-within/select:text-tertiary transition-colors">
-            ▼
-          </div>
+          {/* Ikon SVG, bukan glyph "▼": karakter Unicode merender beda-beda
+              per platform (dan ikut ketebalan font), jadi ia tidak pernah
+              sejajar dengan ikon lucide lain di sistem ini. */}
+          <ChevronDown
+            className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 text-on-surface-variant group-focus-within/select:text-on-surface transition-colors"
+            aria-hidden="true"
+          />
         </div>
       )}
 
       {/* Submit Button */}
       <motion.button
         type="submit"
-        className="px-8 py-4 bg-primary text-on-primary font-black rounded-xl border-3 border-on-surface hard-shadow-sm hover:hard-shadow-md active:hard-shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-3 whitespace-nowrap text-sm uppercase tracking-widest group/btn"
+        className={`px-8 py-4 ${submitTone} font-black rounded-xl border-3 border-on-surface hard-shadow-sm hover:hard-shadow-md active:hard-shadow-none active:translate-x-1 active:translate-y-1 transition-all flex items-center justify-center gap-3 whitespace-nowrap text-sm uppercase tracking-widest group/btn`}
         whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.98 }}
       >
@@ -96,7 +110,9 @@ export function EntitySearchForm({
           transition={{ type: "spring" as const, stiffness: 300, damping: 10 }}
           className="inline-flex"
         >
-          <SubmitIcon className="w-4 h-4 text-on-primary group-hover/btn:text-tertiary transition-colors" />
+          {/* currentColor, bukan text-on-primary hardcode — supaya ikonnya
+              ikut pasangan warna aksen domain apa pun yang dipakai. */}
+          <SubmitIcon className="w-4 h-4" />
         </motion.div>
         <span>{filterLabel}</span>
       </motion.button>

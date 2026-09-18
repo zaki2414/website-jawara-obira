@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  let response = NextResponse.redirect(new URL("/admin", requestUrl.origin));
+  const response = NextResponse.redirect(new URL("/admin", requestUrl.origin));
 
   if (code) {
     const supabase = createServerClient(
@@ -40,10 +40,11 @@ export async function GET(request: NextRequest) {
         await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError) throw exchangeError;
-
-      console.log("✅ Session exchanged successfully");
-    } catch (err: any) {
-      console.error("❌ Exchange code failed:", err);
+    } catch (err: unknown) {
+      console.error(
+        "[auth/callback] exchangeCodeForSession gagal:",
+        err instanceof Error ? err.message : err,
+      );
       return NextResponse.redirect(
         new URL("/login?error=exchange_failed", requestUrl.origin),
       );

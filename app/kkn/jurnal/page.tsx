@@ -8,9 +8,19 @@ import { KknPageBackground } from "@/components/kkn/KknPageBackground";
 import { KKNJournalHero } from "@/components/kkn/KKNJournalHero";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   searchParams: Promise<{ year?: string; month?: string; desa?: string }>;
 };
+
+// Warna aktif per desa sama dengan penyaring di /kkn/proker — biru untuk
+// Kawasi, emas untuk Soligi — supaya "desa mana yang sedang dilihat" ditandai
+// warna yang sama di seluruh bagian KKN.
+const VILLAGE_FILTERS = [
+  { value: "kawasi", label: "Desa Kawasi", activeClass: "bg-primary text-on-primary" },
+  { value: "soligi", label: "Desa Soligi", activeClass: "bg-tertiary text-on-tertiary" },
+] as const;
 
 export default async function KKNJournalCalendar({ searchParams }: PageProps) {
   const DEFAULT_YEAR = 2026;
@@ -66,6 +76,14 @@ export default async function KKNJournalCalendar({ searchParams }: PageProps) {
     return { year: newYear, month: newMonth };
   };
 
+  // Entri bulan ini diratakan jadi satu daftar terurut. Kalender bagus untuk
+  // melihat SEBARAN tanggal, tapi buruk untuk membaca ISI — dengan satu entri
+  // per bulan, seluruh judulnya terpotong di dalam sel selebar 12vw. Daftar di
+  // bawahnya yang membuat isinya benar-benar terbaca.
+  const monthEntries = Object.entries(groupedJournals ?? {})
+    .flatMap(([date, list]) => list.map((entry) => ({ ...entry, date })))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDay = new Date(year, month - 1, 1).getDay();
   const monthNames = [
@@ -74,39 +92,54 @@ export default async function KKNJournalCalendar({ searchParams }: PageProps) {
   ];
 
   return (
-    <div className="relative min-h-screen bg-natural-paper py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="relative min-h-screen bg-cream-container/45 overflow-hidden">
       <KknPageBackground />
 
-      <main className="relative max-w-6xl mx-auto z-10">
-
-        <KKNJournalHero
+      <KKNJournalHero
           monthLabel={`${monthNames[month - 1]} ${year}`}
           entryCount={Object.values(groupedJournals ?? {}).reduce((sum, arr) => sum + arr.length, 0)}
         />
 
-        {/* TOGGLE NAVIGASI DESA BRUTALIST TAB */}
-        <div className="flex justify-end mb-8">
-          <div className="inline-flex p-1 bg-surface-container border-2 border-on-surface rounded-xl shrink-0">
-            <Link
-              href={`?year=${year}&month=${month}&desa=kawasi`}
-              className={`px-4 py-2 rounded-lg font-serif font-black text-sm uppercase tracking-wider transition-all ${
-                selectedDesa === "kawasi"
-                  ? "bg-on-surface text-background border-2 border-on-surface"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              Desa Kawasi
-            </Link>
-            <Link
-              href={`?year=${year}&month=${month}&desa=soligi`}
-              className={`px-4 py-2 rounded-lg font-serif font-black text-sm uppercase tracking-wider transition-all ${
-                selectedDesa === "soligi"
-                  ? "bg-on-surface text-background border-2 border-on-surface"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              Desa Soligi
-            </Link>
+      <main className="relative max-w-7xl mx-auto z-10 px-4 sm:px-6 lg:px-8 py-12">
+
+        {/* PENYARING DESA — bentuk chip yang sama dengan PageFilterBar
+            (components/shared/PageFilterBar.tsx) yang dipakai Budaya, Galeri,
+            TOGA, Fauna, dan UMKM, serta /kkn/proker: tinggi h-11, rounded-xl,
+            border-2 di semua chip (bukan hanya yang aktif), huruf kapital
+            tebal, dan warna solid per desa saat aktif.
+
+            Sebelumnya deretan ini punya bentuknya sendiri — kotak abu-abu
+            berisi dua tautan rounded-lg tanpa tepi, memakai font serif dan
+            rata kanan — sehingga halaman ini dan /kkn/proker jadi dua
+            halaman yang filternya terlihat beda sendiri dari sisa situs.
+
+            Tetap <Link> (navigasi ?desa=, disaring di server), bukan tombol
+            dengan callback seperti PageFilterBar — karena itu komponennya
+            tidak dipakai ulang langsung di sini. year & month ikut dibawa
+            supaya berpindah desa tidak melempar pembaca kembali ke bulan
+            awal. */}
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <span className="text-label-sm font-black uppercase tracking-widest text-on-surface-variant">
+            Wilayah
+          </span>
+          <div role="group" aria-label="Saring menurut desa" className="flex flex-wrap gap-2">
+            {VILLAGE_FILTERS.map((f) => {
+              const isActive = selectedDesa === f.value;
+              return (
+                <Link
+                  key={f.value}
+                  href={`?year=${year}&month=${month}&desa=${f.value}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`inline-flex h-11 shrink-0 items-center rounded-xl border-2 border-on-surface px-4 text-label-sm font-black uppercase tracking-wider transition-colors duration-150 press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                    isActive
+                      ? `${f.activeClass} hard-shadow-sm`
+                      : "bg-background text-on-surface-variant hover:bg-surface-container-low"
+                  }`}
+                >
+                  {f.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
 
@@ -215,6 +248,71 @@ export default async function KKNJournalCalendar({ searchParams }: PageProps) {
             );
           })}
         </div>
+
+        {/* ── DAFTAR ENTRI BULAN INI ────────────────────────────────
+            Kalender menjawab "kapan", daftar ini menjawab "apa". Tanpanya,
+            satu-satunya cara tahu isi sebuah jurnal adalah menebak dari judul
+            terpotong di dalam sel kalender. */}
+        {monthEntries.length > 0 && (
+          <section className="mt-14">
+            <div className="flex items-baseline justify-between gap-4 border-b-4 border-on-surface pb-3">
+              <h2 className="text-label-md font-black uppercase tracking-[0.16em] text-on-surface">
+                Catatan {monthNames[month - 1]}
+              </h2>
+              <span className="text-label-sm font-black tabular text-on-surface-variant">
+                {monthEntries.length} entri
+              </span>
+            </div>
+
+            <ul className="divide-y-2 divide-on-surface/10">
+              {monthEntries.map((entry) => (
+                <li key={entry.id}>
+                  <Link
+                    href={`/kkn/jurnal/${entry.slug}`}
+                    className="group grid grid-cols-[auto_1fr_auto] sm:grid-cols-[7rem_1fr_auto] items-center gap-x-5 gap-y-2 rounded-2xl px-3 py-4 transition-colors duration-200 hover:bg-background/70"
+                  >
+                    <div className="relative hidden h-20 w-28 shrink-0 overflow-hidden rounded-xl border-2 border-on-surface bg-surface-container-low sm:block">
+                      {entry.cover_image ? (
+                        <Image
+                          src={entry.cover_image}
+                          alt=""
+                          aria-hidden="true"
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          sizes="112px"
+                        />
+                      ) : (
+                        <div className="grid h-full place-items-center" aria-hidden="true">
+                          <span className="text-label-sm font-black uppercase text-on-surface/30">
+                            Tanpa foto
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <span className="text-label-sm font-black uppercase tracking-[0.14em] text-primary tabular">
+                        {new Date(entry.date).toLocaleDateString("id-ID", {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                        })}
+                      </span>
+                      <h3 className="mt-1 font-serif text-xl font-black leading-tight text-on-surface text-balance md:text-2xl">
+                        {entry.title}
+                      </h3>
+                    </div>
+
+                    <ChevronRight
+                      className="size-5 shrink-0 text-on-surface transition-transform duration-200 group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
       </main>
     </div>

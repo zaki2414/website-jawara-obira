@@ -1,30 +1,26 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   ArrowRight,
   Backpack,
   Images,
   Store,
-  Newspaper,
   Landmark,
   Bird,
   Sprout,
   Map,
   Compass,
 } from "lucide-react";
-import { scaleIn } from "@/lib/animations";
 import type { AdminMenuIconKey, AdminMenuItem, AdminMenuSize } from "@/constants/admin";
 import { ADMIN_ACCENT_STYLES } from "../adminAccent";
 
-// Resolve string key -> komponen ikon DI DALAM client component ini (bukan
-// diterima lewat props) — lihat catatan AdminMenuIconKey di constants/admin.ts.
+// Resolve string key -> komponen ikon di sini, bukan diterima lewat props —
+// lihat catatan AdminMenuIconKey di constants/admin.ts. (Kartu ini sekarang
+// Server Component; indirection lewat string key dipertahankan apa adanya
+// karena sudah jadi kontrak constants/admin.ts.)
 const ICONS: Record<AdminMenuIconKey, typeof Backpack> = {
   backpack: Backpack,
   images: Images,
   store: Store,
-  newspaper: Newspaper,
   landmark: Landmark,
   bird: Bird,
   sprout: Sprout,
@@ -50,11 +46,16 @@ export function MenuCard({ item }: MenuCardProps) {
   const isWide = item.size === "wide";
 
   return (
-    <motion.div variants={scaleIn} className={`${SIZE_SPAN[item.size]} ${item.lgArea}`}>
-      <Link
+    <div className={`${SIZE_SPAN[item.size]} ${item.lgArea}`}>
+      <Link prefetch={false}
         href={item.href}
-        className={`group relative flex h-full min-h-37.5 flex-col overflow-hidden rounded-2xl border-2 border-on-surface px-5 pt-5 pb-6 hard-shadow-md
-           transition-all duration-200 hover:-translate-x-1 hover:-translate-y-1 hover:hard-shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${accent.solidBg} ${isWide ? "sm:px-7 sm:pt-7 sm:pb-8" : ""}`}
+        // hard-shadow-hover + press-effect: utilitas milik proyek sendiri
+        // (app/globals.css) — transisinya dideklarasikan di state dasar dan
+        // hover-nya di-gate ke perangkat berkursor. Sebelumnya kartu ini
+        // menulis ulang efeknya sendiri dengan `transition-all`, yang ikut
+        // menganimasikan properti yang tidak diinginkan dan "patah" saat
+        // kursor keluar.
+        className={`group relative flex h-full min-h-37.5 flex-col overflow-hidden rounded-2xl border-2 border-on-surface px-5 pt-5 pb-6 hard-shadow-md hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${accent.solidBg} ${isWide ? "sm:px-7 sm:pt-7 sm:pb-8" : ""}`}
       >
         <Icon
           className={`pointer-events-none absolute -bottom-4 -right-4 opacity-10 ${accent.text} ${isWide ? "size-32" : "size-20"}`}
@@ -88,6 +89,6 @@ export function MenuCard({ item }: MenuCardProps) {
           />
         </span>
       </Link>
-    </motion.div>
+    </div>
   );
 }

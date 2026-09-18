@@ -1,5 +1,5 @@
 // 4 variasi BORDER krem (gradasi cream) yang dirotasi per kartu
-// (index di grid) — paralel dengan BERITA_ACCENT_BORDERS/FAUNA_ACCENT_BORDERS,
+// (index di grid) — paralel dengan FAUNA_ACCENT_BORDERS/TOGA_ACCENT_BORDERS,
 // karena kotak menu "Manajemen UMKM" di dashboard admin berwarna cream
 // (lihat accent: "cream" di constants/admin.ts). Sengaja file terpisah
 // (bukan reuse langsung dari folder lain) supaya domain umkm tidak

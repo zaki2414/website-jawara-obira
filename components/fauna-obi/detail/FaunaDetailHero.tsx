@@ -63,6 +63,12 @@ export function FaunaDetailHero({ fauna }: FaunaDetailHeroProps) {
 
         <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-transparent" />
 
+        {fauna.image_source && (
+          <span className="absolute bottom-3 right-4 md:bottom-4 md:right-5 text-xs font-medium text-white/70">
+            Sumber: {fauna.image_source}
+          </span>
+        )}
+
         <div className="absolute inset-0 flex items-end p-6 md:p-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -21,6 +21,7 @@ export type Fauna = {
   description?: string;
   physical_characteristics?: string;
   thumbnail_url?: string;
+  image_source?: string;
   documentations?: string | FaunaImage[];
 };
 
@@ -70,11 +71,72 @@ export const IUCN_STYLES: Record<string, string> = {
   NT: "bg-status-caution text-on-surface border-2 border-on-surface",
   VU: "bg-status-warning text-on-primary border-2 border-on-surface",
   EN: "bg-status-danger text-on-primary border-2 border-on-surface font-black",
-  CR: "bg-status-critical text-on-primary border-2 border-on-surface font-black animate-pulse",
+  // animate-pulse dihapus: denyut tak berujung dicadangkan untuk indikator
+  // loading (CLAUDE.md §3.5). Pada badge status, ia justru menarik perhatian
+  // terus-menerus ke satu baris dan menyulitkan membaca daftar panjang —
+  // bobot & warna merah tua sudah cukup menandai status paling genting.
+  CR: "bg-status-critical text-on-primary border-2 border-on-surface font-black",
+  // Belum dievaluasi / data kurang — netral, bukan "aman".
+  NE: "bg-surface-container-high text-on-surface-variant border-2 border-outline",
+  DD: "bg-surface-container-high text-on-surface-variant border-2 border-outline",
 };
 
+/** Urutan keparahan, dipakai untuk mengurutkan legenda & ringkasan status. */
+export const IUCN_ORDER = ["CR", "EN", "VU", "NT", "LC", "NE", "DD"] as const;
+
+export const IUCN_LABELS: Record<string, string> = {
+  LC: "Risiko Rendah",
+  NT: "Hampir Terancam",
+  VU: "Rentan",
+  EN: "Terancam",
+  CR: "Kritis",
+  NE: "Belum Dievaluasi",
+  DD: "Data Kurang",
+};
+
+/**
+ * Ambil KODE IUCN dari nilai apa pun yang tersimpan di database.
+ *
+ * Kolom `iucn_status` diisi admin sebagai teks bebas, dan yang benar-benar ada
+ * di data berbentuk "Least Concern (LC)", "Vulnerable (VU)", "Belum
+ * Dievaluasi (NE)" — bukan kode pendek. Sebelumnya IUCN_STYLES di-lookup
+ * langsung dengan string penuh itu, jadi TIDAK PERNAH kena: seluruh badge
+ * status konservasi jatuh ke gaya netral abu-abu, dan perbedaan antara satwa
+ * Rentan dan Risiko Rendah hilang sama sekali dari halaman.
+ */
+export function getIucnCode(status?: string | null): string {
+  if (!status) return "";
+  const text = status.trim();
+  // 1. Kode di dalam kurung — bentuk paling umum di data ini.
+  const inParens = text.match(/\(([A-Za-z]{2})\)\s*$/);
+  if (inParens) return inParens[1].toUpperCase();
+  // 2. Sudah berupa kode pendek.
+  const bare = text.toUpperCase();
+  if (bare.length === 2 && bare in IUCN_STYLES) return bare;
+  // 3. Dicocokkan dari frasa Inggris/Indonesia yang lazim dipakai.
+  const lower = text.toLowerCase();
+  if (lower.includes("critical") || lower.includes("kritis")) return "CR";
+  if (lower.includes("endanger") || lower.includes("terancam punah")) return "EN";
+  if (lower.includes("vulnerable") || lower.includes("rentan")) return "VU";
+  if (lower.includes("near threatened") || lower.includes("hampir")) return "NT";
+  if (lower.includes("least concern") || lower.includes("risiko rendah")) return "LC";
+  if (lower.includes("data deficient") || lower.includes("data kurang")) return "DD";
+  if (lower.includes("not evaluated") || lower.includes("belum dievaluasi")) return "NE";
+  return "";
+}
+
 export function getIucnBrutalistClass(status?: string): string {
-  return IUCN_STYLES[status || ""] || "bg-surface-container text-on-surface border border-outline";
+  return (
+    IUCN_STYLES[getIucnCode(status)] ||
+    "bg-surface-container text-on-surface border-2 border-outline"
+  );
+}
+
+/** Label ringkas untuk badge: kode + nama Indonesianya. */
+export function getIucnLabel(status?: string | null): string {
+  const code = getIucnCode(status);
+  if (!code) return "Tanpa Status";
+  return `${code} · ${IUCN_LABELS[code] ?? ""}`.trim();
 }
 
 // ==========================================
@@ -192,6 +254,10 @@ export const FAUNA_ACCENT_STYLES: Record<
     border: string;
     /** Warna teks/ikon aksen yang tetap kontras di atas bg-background. */
     text: string;
+    /** Warna judul kartu saat hover. Ditulis sebagai kelas LITERAL (bukan
+     *  `group-hover:${text}`) karena Tailwind memindai kelas dari sumber dan
+     *  tidak pernah melihat kelas yang dirakit saat runtime. */
+    hoverText: string;
   }
 > = {
   primary: {
@@ -199,12 +265,14 @@ export const FAUNA_ACCENT_STYLES: Record<
     topBar: "bg-primary",
     border: "border-primary",
     text: "text-primary",
+    hoverText: "group-hover:text-primary",
   },
   tertiary: {
     badge: "bg-tertiary text-on-tertiary",
     topBar: "bg-tertiary",
     border: "border-tertiary",
     text: "text-on-tertiary",
+    hoverText: "group-hover:text-on-tertiary",
   },
 };
 

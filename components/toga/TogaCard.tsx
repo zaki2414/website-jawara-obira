@@ -43,7 +43,7 @@ export function TogaCard({ item, index, large = false }: TogaCardProps) {
     >
       <div>
         <h3
-          className={`font-serif font-black text-on-surface group-hover:text-primary transition-colors leading-tight mb-1 line-clamp-2 ${
+          className={`font-serif font-black text-on-surface ${styles.hoverText} transition-colors leading-tight mb-1 line-clamp-2 ${
             large ? "text-2xl md:text-3xl" : "text-2xl min-h-14"
           }`}
         >

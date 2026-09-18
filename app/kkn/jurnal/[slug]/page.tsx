@@ -8,6 +8,9 @@ import { JournalDetailHero } from "@/components/kkn/detail/JournalDetailHero";
 import { JournalContentSection } from "@/components/kkn/detail/JournalContentSection";
 import { JournalGallerySection } from "@/components/kkn/detail/JournalGallerySection";
 import { JournalInfoSidebar } from "@/components/kkn/detail/JournalInfoSidebar";
+import { sanitizeRichText } from "@/lib/sanitizeHtml";
+
+export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -61,7 +64,7 @@ export default async function KKNJournalDetail({ params }: Props) {
 
         <div className="grid md:grid-cols-12 md:gap-10 items-start">
           <div className="md:col-span-8 space-y-6">
-            <JournalContentSection html={journal.content} border={styles.border} />
+            <JournalContentSection html={sanitizeRichText(journal.content)} border={styles.border} />
             <JournalGallerySection images={images} />
           </div>
 

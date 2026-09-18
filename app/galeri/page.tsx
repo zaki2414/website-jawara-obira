@@ -28,7 +28,8 @@ export default async function GaleriPage() {
       <div className="relative z-10">
         <GaleriHeaderSection totalCount={items.length} categoryCounts={categoryCounts} />
 
-        <section className="relative bg-linear-to-b from-cream-container/35 via-background to-background py-16 md:py-24 px-6 border-b-4 border-on-surface">
+        {/* Ground kertas rata — lihat catatan di app/toga/page.tsx. */}
+        <section className="relative bg-natural-paper py-16 md:py-24 px-6 border-b-4 border-on-surface">
           <div className="relative max-w-7xl mx-auto z-10">
             {items.length > 0 ? (
               <GaleriCatalogClient items={items} categoryCounts={categoryCounts} />

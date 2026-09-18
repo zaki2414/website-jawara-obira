@@ -78,6 +78,31 @@ export function formatDate(date: string, options?: Intl.DateTimeFormatOptions): 
   })
 }
 
+// Ringkasan teks dari konten kaya (TipTap menyimpan HTML). Dipakai layout
+// indeks/editorial yang perlu menampilkan cuplikan artikel di luar halaman
+// detail — sebelumnya tidak ada satu pun listing yang menampilkan isi, jadi
+// pembaca harus membuka artikel hanya untuk tahu apa isinya.
+// Tag dibuang lebih dulu supaya markup tidak ikut terhitung ke batas panjang.
+export function excerptFromHtml(html?: string | null, maxChars = 180): string {
+  if (!html) return ""
+  const text = html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (text.length <= maxChars) return text
+  // Potong di batas kata terakhir supaya tidak memenggal kata di tengah.
+  const cut = text.slice(0, maxChars)
+  const lastSpace = cut.lastIndexOf(" ")
+  return `${(lastSpace > maxChars * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`
+}
+
 // Admin cukup tempel link share Google Maps ATAU "lat, lng" polos ke satu
 // input teks (lihat UMKMForm.tsx) — tidak perlu Google Maps API key sama
 // sekali, cukup ekstrak koordinat dari beberapa pola URL yang umum dipakai

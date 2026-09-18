@@ -20,12 +20,12 @@ export function DashboardHero({ name }: DashboardHeroProps) {
       <AdminOrnaments variant="dashboard" />
 
       <div className="relative z-10">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 text-label-sm font-black uppercase tracking-widest text-on-surface-variant">
-            <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-            Panel Kendali Arsip
-          </span>
-          <Badge variant="solid-tertiary" aria-hidden="true">
+        {/* Tanpa label kicker di atas judul. "Panel Kendali Arsip" dulu duduk
+            di sini sebagai eyebrow — pengulangan yang tidak menambah apa pun:
+            admin sudah tahu ia di panel admin, dan Badge di kanan sudah
+            menandainya. Judulnya menanggung bobotnya sendiri. */}
+        <div className="mb-3 flex justify-end">
+          <Badge variant="solid-tertiary">
             <Sparkles aria-hidden="true" />
             Admin
           </Badge>
@@ -41,11 +41,11 @@ export function DashboardHero({ name }: DashboardHeroProps) {
             </p>
           </div>
 
-          <Link
+          <Link prefetch={false}
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border-2 border-on-surface bg-background px-4 py-2.5 text-label-md font-black uppercase tracking-wide text-on-surface hard-shadow-sm hard-shadow-hover press-effect transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border-2 border-on-surface bg-background px-4 py-2.5 text-label-md font-black uppercase tracking-wide text-on-surface hard-shadow-sm hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             Lihat Situs Publik
             <ArrowUpRight className="size-4" aria-hidden="true" />

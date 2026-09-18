@@ -4,6 +4,7 @@ import { getCultureDetail } from "@/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import CultureDetailClient from "./CultureDetailClient";
 import type { CultureItem, ExtraImage } from "@/constants/budaya";
+import { sanitizeRichText } from "@/lib/sanitizeHtml";
 
 export const revalidate = 3600;
 
@@ -54,9 +55,16 @@ export default async function CultureDetail({ params }: Props) {
 
   const extraImages = parseExtraImages(culture.extra_images);
 
+  // HTML rich-text disaring DI SINI, di sisi server, sebelum menyeberang ke
+  // Client Component — lihat lib/sanitizeHtml.ts.
+  const safeCulture = {
+    ...culture,
+    content: sanitizeRichText(culture.content as string | null | undefined),
+  };
+
   return (
     <CultureDetailClient
-      culture={culture as unknown as CultureItem}
+      culture={safeCulture as unknown as CultureItem}
       extraImages={extraImages}
     />
   );

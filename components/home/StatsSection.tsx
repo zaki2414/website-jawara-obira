@@ -62,7 +62,13 @@ export function StatsSection({ stats }: StatsSectionProps) {
                   </div>
                 </div>
 
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-primary/5 transition-colors duration-[--duration-panel] group-hover:bg-primary/10 pointer-events-none rounded-tl-xl border-t-2 border-l-2 border-dashed border-on-surface/10" />
+                {/* Wedge sudut 32px berposisi absolut dihapus: pada 5% tint
+                    dengan garis putus beropasitas 10% ia praktis tak terlihat,
+                    tapi tetap menambah dua tepi bergaris pada kartu yang sudah
+                    punya border tebal sendiri — tumpukan tepi itulah yang bikin
+                    sudut kartu terbaca kotor. Elemennya absolut &
+                    pointer-events-none, jadi penghapusannya tidak mengubah
+                    susunan apa pun. */}
               </div>
             );
           })}

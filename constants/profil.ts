@@ -26,14 +26,17 @@ export type VillageKey = "kawasi" | "soligi";
 // AdminMenuIconKey di constants/admin.ts). Consumer yang butuh ikon resolve
 // sendiri dari VILLAGE_VISUAL_META[village].icon di dalam file "use client"
 // masing-masing.
+// title/longDesc/highlight SENGAJA tidak ada di sini — kolomnya (`title`,
+// `long_description`, `highlight`) tidak pernah dibuat di tabel `villages`,
+// jadi tiap kali admin coba simpan (via VillageForm.tsx), Postgrest menolak
+// SELURUH update karena satu kolom saja tidak dikenal (PGRST204) — termasuk
+// saat yang ingin diubah cuma thumbnail. Tipe & form ini disederhanakan
+// supaya cuma memuat kolom yang benar-benar ada.
 export type VillageContent = {
   id: VillageKey;
   name: string;
   slug: string;
-  title: string | null;
   description: string | null;
-  longDesc: string | null;
-  highlight: string | null;
   image: string | null;
   population: number | null;
   households: number | null;
@@ -80,10 +83,7 @@ export const VILLAGE_VISUAL_META: Record<VillageKey, { name: string; badgeColor:
 type RawVillageRow = {
   slug?: string;
   name?: string;
-  title?: string | null;
   description?: string | null;
-  long_description?: string | null;
-  highlight?: string | null;
   thumbnail_url?: string | null;
   village_statistics?:
     | { population?: number | null; households?: number | null; hamlets?: number | null; area_km2?: number | null }
@@ -111,10 +111,7 @@ export function mergeVillageContent(rows: RawVillageRow[]): Record<VillageKey, V
       id: key,
       name: row?.name || meta.name,
       slug: key,
-      title: row?.title ?? null,
       description: row?.description ?? null,
-      longDesc: row?.long_description ?? null,
-      highlight: row?.highlight ?? null,
       image: row?.thumbnail_url ?? null,
       population: stats?.population ?? null,
       households: stats?.households ?? null,

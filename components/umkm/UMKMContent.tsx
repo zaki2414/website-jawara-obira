@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import {
   UMKMHeader,
   UMKMSearchForm,
@@ -17,40 +14,36 @@ type UMKMContentProps = {
   businessTypeCounts: Record<string, number>;
 };
 
+// Server Component: tidak ada state sama sekali di halaman ini — penyaringan
+// dijalankan lewat URL (?q=&type=), jadi tiap hasil saringan punya alamat
+// sendiri yang bisa dibagikan dan tetap berfungsi tanpa JavaScript.
 export default function UMKMContent({
   items,
   initialQ,
   initialType,
   businessTypeCounts,
 }: UMKMContentProps) {
+  // Bento hanya saat daftar penuh: begitu pengunjung menyaring, kartu
+  // berukuran seragam lebih mudah dibandingkan satu sama lain.
+  const isBento = !initialQ && (!initialType || initialType === "all");
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-      {/* Hero full-bleed dipisah dari section kertas di bawah supaya ada
-          irama gantian warna/kertas seperti home & profil. */}
+    <div>
       <UMKMHeader businessTypeCounts={businessTypeCounts} />
 
-      <section className="relative bg-linear-to-b from-tertiary-container/20 via-background to-background py-10 md:py-16 px-4 sm:px-6 md:px-8 border-b-4 border-on-surface min-h-screen overflow-hidden">
-        {/* Hiasan 4.svg (fill putih) nyaris tak kelihatan di atas section
-            yang dasarnya terang (bg-background/tertiary-container tipis) —
-            putih di atas terang = nyaris invisible. Hiasan 1.svg (stroke abu
-            gelap #2E2E2E) kontras jelas di kertas terang, dan beda dari
-            Hiasan 2 yang sudah dipakai UMKMHeader supaya hero & isi halaman
-            tetap terasa bervariasi. */}
+      <section className="relative bg-natural-paper py-10 md:py-16 px-4 sm:px-6 md:px-8 border-b-4 border-on-surface min-h-screen overflow-hidden">
         <RotatingHiasanBackground hiasan={1} density="elegant" />
 
-        <div className="relative max-w-7xl mx-auto z-10 space-y-6">
+        <div className="relative max-w-7xl mx-auto z-10 space-y-8">
           <UMKMSearchForm initialQ={initialQ} initialType={initialType} />
 
-          {items && items.length > 0 ? (
-            <UMKMGrid
-              items={items}
-              isBento={!initialQ && (!initialType || initialType === "all")}
-            />
+          {items.length > 0 ? (
+            <UMKMGrid items={items} isBento={isBento} />
           ) : (
             <UMKMEmptyState />
           )}
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 }

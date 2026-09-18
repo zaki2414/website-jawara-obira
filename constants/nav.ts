@@ -15,11 +15,11 @@ export const NAV_LINKS: NavLink[] = [
   { href: "/kkn", label: "Tim Kami" },
 ];
 
-// Daftar link kurasi untuk Footer (termasuk /berita yang tidak ada di Navbar utama).
-// Dipisah dari NAV_LINKS secara sengaja, tapi hidup di satu file yang sama supaya
-// tidak ada lagi array link yang di-hardcode ulang di dalam komponen.
+// Daftar link kurasi untuk Footer — label sengaja lebih deskriptif daripada
+// NAV_LINKS. Dipisah dari NAV_LINKS secara sengaja, tapi hidup di satu file
+// yang sama supaya tidak ada lagi array link yang di-hardcode ulang di dalam
+// komponen.
 export const FOOTER_LINKS: NavLink[] = [
-  { href: "/berita", label: "Warta Berita Desa" },
   { href: "/budaya", label: "Dokumentasi Budaya Obi" },
   { href: "/galeri", label: "Galeri Foto Ekspedisi" },
   { href: "/kkn", label: "Log Personel KKN UGM" },

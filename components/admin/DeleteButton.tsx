@@ -8,7 +8,6 @@ import { Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type DeleteableTable =
-  | "news"
   | "culture_articles"
   | "galleries"
   | "kkn_documentations"

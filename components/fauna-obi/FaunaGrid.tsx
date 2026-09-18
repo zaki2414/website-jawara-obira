@@ -13,22 +13,32 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.15 },
+    transition: { staggerChildren: 0.07, delayChildren: 0.08 },
   },
 };
 
+// Animasi MASUK memakai kurva ease-out halus, BUKAN spring.
+//
+// Spring (stiffness 260 / damping 22) punya letupan awal dan sedikit
+// overshoot di ujungnya. Untuk gestur yang bisa diinterupsi itu tepat, tapi
+// untuk elemen yang muncul saat digulir efeknya persis seperti "dilempar" ke
+// tempatnya — sensasi kaget yang sama dengan ease expo. Kartu tidak sedang
+// merespons sentuhan siapa pun; ia hanya perlu hadir dengan tenang.
+//
+// Jarak geraknya juga diperkecil (y 40 -> 24, scale 0.94 -> 0.98): makin jauh
+// lompatannya, makin terasa menyentak pada durasi yang sama.
 const cardWrapperVariants = {
-  hidden: { opacity: 0, y: 40, scale: 0.94 },
+  hidden: { opacity: 0, y: 24, scale: 0.98 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring" as const, stiffness: 260, damping: 22 },
+    transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
   },
   exit: {
     opacity: 0,
-    scale: 0.9,
-    y: 20,
+    scale: 0.97,
+    y: 12,
     transition: { duration: 0.2, ease: "easeOut" as const },
   },
 };

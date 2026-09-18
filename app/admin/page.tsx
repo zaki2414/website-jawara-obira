@@ -36,7 +36,11 @@ export default async function AdminDashboard() {
               Gagal memuat statistik. Muat ulang halaman untuk mencoba lagi.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            // lg:grid-cols-3 mengikuti jumlah kartu statistik yang ada
+            // (ADMIN_STAT_META). Dulu 4 kolom untuk 4 kartu; sejak kartu
+            // "Total Berita" ikut terhapus bersama seksi Berita, kolom
+            // keempat tinggal lubang kosong di ujung baris.
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {ADMIN_STAT_META.map((stat) => (
                 <StatCard
                   key={stat.key}

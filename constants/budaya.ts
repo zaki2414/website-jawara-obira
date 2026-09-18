@@ -141,6 +141,10 @@ export const CATEGORY_ACCENT_STYLES: Record<
     border: string;
     ring: string;
     text: string;
+    /** Warna judul kartu saat hover — kelas LITERAL, bukan `group-hover:${text}`,
+     *  karena Tailwind memindai kelas dari sumber dan tidak pernah melihat
+     *  kelas yang dirakit saat runtime. */
+    hoverText: string;
   }
 > = {
   primary: {
@@ -152,6 +156,7 @@ export const CATEGORY_ACCENT_STYLES: Record<
     border: "border-primary",
     ring: "focus-visible:ring-primary",
     text: "text-primary",
+    hoverText: "group-hover:text-primary",
   },
   tertiary: {
     badge: "bg-tertiary text-on-tertiary",
@@ -162,6 +167,7 @@ export const CATEGORY_ACCENT_STYLES: Record<
     border: "border-tertiary",
     ring: "focus-visible:ring-tertiary",
     text: "text-on-tertiary",
+    hoverText: "group-hover:text-on-tertiary",
   },
   cream: {
     badge: "bg-cream text-on-surface",
@@ -172,6 +178,7 @@ export const CATEGORY_ACCENT_STYLES: Record<
     border: "border-on-surface",
     ring: "focus-visible:ring-secondary",
     text: "text-on-surface",
+    hoverText: "group-hover:text-on-surface",
   },
 };
 

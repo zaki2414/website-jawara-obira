@@ -53,7 +53,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="p-2 bg-primary border-2 border-on-surface rounded-xl text-background hard-shadow-sm group-hover:-translate-x-px group-hover:-translate-y-px group-hover:hard-shadow-md transition-all duration-150">
               <Image
-                src="/Logo Obi.svg"
+                src="/Logo Obi Kuning.svg"
                 alt="Logo Jawara Obira"
                 width={20}
                 height={20}
@@ -89,6 +89,7 @@ export default function Navbar() {
             {isAdmin && (
               <Link
                 href="/admin"
+                prefetch={false}
                 className="ml-2 px-3.5 py-2 bg-error text-on-error text-xs font-black uppercase tracking-wider rounded-xl border-2 border-on-surface hard-shadow-sm hover:-translate-x-px hover:-translate-y-px hover:hard-shadow-md active:translate-x-0 active:translate-y-0 transition-all duration-150 flex items-center gap-1.5"
               >
                 <ShieldAlert className="w-4 h-4" /> Admin
@@ -131,6 +132,7 @@ export default function Navbar() {
             {isAdmin && (
               <Link
                 href="/admin"
+                prefetch={false}
                 className="block mx-2 mt-4 px-4 py-3.5 bg-error text-on-error text-center font-black uppercase tracking-widest text-xs rounded-xl border-2 border-on-surface hard-shadow-sm"
                 onClick={() => setOpen(false)}
               >

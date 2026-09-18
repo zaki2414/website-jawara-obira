@@ -38,7 +38,7 @@ export function AdminFacilityGrid({ facilities }: AdminFacilityGridProps) {
               type="button"
               onClick={() => setVillage(key)}
               aria-pressed={active}
-              className={`cursor-pointer inline-flex items-center gap-2 rounded-xl border-2 border-on-surface px-4 py-2 text-label-md font-black uppercase tracking-wide transition-all hard-shadow-sm hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              className={`cursor-pointer inline-flex items-center gap-2 rounded-xl border-2 border-on-surface px-4 py-2 text-label-md font-black uppercase tracking-wide transition-colors hard-shadow-sm hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 active ? "bg-primary text-on-primary" : "bg-background text-on-surface"
               }`}
             >

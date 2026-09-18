@@ -31,7 +31,7 @@ export default async function AdminVillageFormPage({
             { label: "Edit" },
           ]}
           title="Edit Profil Desa"
-          subtitle={`Perbarui julukan, deskripsi, statistik, dan foto "${village.name}".`}
+          subtitle={`Perbarui deskripsi, statistik, dan foto "${village.name}".`}
           badgeLabel="Desa"
           badgeIcon={PenSquare}
           action={{ href: "/admin/desa", label: "Desa", icon: ArrowLeft }}

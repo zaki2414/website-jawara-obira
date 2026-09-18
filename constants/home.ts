@@ -1,5 +1,5 @@
 import {
-  Newspaper, Info, Birdhouse, User, BriefcaseBusiness, Store,
+  Info, Birdhouse, User, BriefcaseBusiness, Store,
   Bird, Sprout, Palette, Camera,
 } from "lucide-react";
 
@@ -32,7 +32,7 @@ export type Proker = {
   slug: string;
   short_description?: string;
   image_url?: string;
-  impact_metrics?: Record<string, string>;
+  impact_metrics?: { label: string; value: string }[];
   documentation?: ProkerDocumentation[] | string | null;
 };
 
@@ -102,21 +102,11 @@ export const POTENSI_DESA = [
     accent: "text-on-tertiary",
     border: "border-on-surface",
   },
-  {
-    id: 6,
-    href: "/berita",
-    icon: Newspaper,
-    title: "Berita Desa",
-    desc: "Update terkini kegiatan dan perkembangan desa.",
-    color: "bg-primary",
-    accent: "text-on-primary",
-    border: "border-on-surface",
-  },
 ] as const;
 
 export const HERO_CTA_BUTTONS = [
   { href: "/profil", label: "Profil Desa", icon: Info, variant: "primary" as const },
-  { href: "/berita", label: "Berita Terkini", icon: Newspaper, variant: "outline" as const },
+  { href: "/kkn", label: "Tim KKN", icon: User, variant: "outline" as const },
 ] as const;
 
 export const HERO_WORDS = ["Selamat Datang", "di Pulau Obi"];

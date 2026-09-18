@@ -119,7 +119,7 @@ export function KKNJournalCalendar({
                   setYear(m.year);
                   setMonth(m.month);
                 }}
-                className={`shrink-0 rounded-full border-2 border-on-surface px-3.5 py-1.5 text-label-sm font-black uppercase tracking-wide transition-all press-effect ${
+                className={`shrink-0 rounded-full border-2 border-on-surface px-3.5 py-1.5 text-label-sm font-black uppercase tracking-wide transition-colors press-effect ${
                   active
                     ? "bg-tertiary text-on-tertiary hard-shadow-sm"
                     : "bg-background text-on-surface-variant hover:bg-surface-container-low"
@@ -182,7 +182,7 @@ export function KKNJournalCalendar({
               key={day}
               type="button"
               onClick={() => setSelectedDate(dateStr)}
-              className={`group relative flex h-20 flex-col justify-between overflow-hidden rounded-lg border-2 p-2 text-left transition-all duration-150 sm:h-28 sm:p-3 sm:rounded-xl ${
+              className={`group relative flex h-20 flex-col justify-between overflow-hidden rounded-lg border-2 p-2 text-left transition-colors duration-150 sm:h-28 sm:p-3 sm:rounded-xl ${
                 hasEntries
                   ? "border-on-surface hard-shadow-sm hover:-translate-y-0.5 hover:-translate-x-0.5 hover:hard-shadow-md cursor-pointer"
                   : "border-dashed border-outline-variant bg-surface-container-low/40 hover:border-on-surface hover:bg-surface-container-low"
@@ -307,7 +307,7 @@ export function KKNJournalCalendar({
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <Button asChild variant="ghost" size="icon" aria-label="Edit jurnal">
-                        <Link href={`/admin/kkn/jurnal/${entry.id}`}>
+                        <Link prefetch={false} href={`/admin/kkn/jurnal/${entry.id}`}>
                           <Pencil className="size-4" aria-hidden="true" />
                         </Link>
                       </Button>
@@ -318,7 +318,7 @@ export function KKNJournalCalendar({
               )}
 
               <Button asChild variant="outline" className="w-full">
-                <Link href={`/admin/kkn/jurnal/new?date=${selectedDate}`}>
+                <Link prefetch={false} href={`/admin/kkn/jurnal/new?date=${selectedDate}`}>
                   <Plus className="size-4" aria-hidden="true" />
                   Tambah Jurnal untuk Tanggal Ini
                 </Link>

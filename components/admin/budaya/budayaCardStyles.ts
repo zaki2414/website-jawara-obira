@@ -1,6 +1,6 @@
 // 4 variasi BORDER biru (gradasi primary) yang dirotasi per kartu (index di
-// grid) — paralel dengan KKN_ACCENT_BORDERS/BERITA_ACCENT_BORDERS/
-// PETA_ACCENT_BORDERS, karena kotak menu "Manajemen Budaya" di dashboard
+// grid) — paralel dengan KKN_ACCENT_BORDERS/PETA_ACCENT_BORDERS, karena
+// kotak menu "Manajemen Budaya" di dashboard
 // admin sekarang berwarna primary (accent: "primary" di constants/admin.ts).
 export const BUDAYA_ACCENT_BORDERS = [
   "border-primary",

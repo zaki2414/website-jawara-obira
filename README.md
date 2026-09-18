@@ -5,7 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.6-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![GSAP](https://img.shields.io/badge/GSAP-Animations-88CE02?style=for-the-badge&logo=greensock&logoColor=white)](https://gsap.com/)
 
 > 🚧 **Proyek KKN UGM** — Dikembangkan oleh tim Kuliah Kerja Nyata tim Jawara Obira di Pulau Obi sebagai bentuk pengabdian masyarakat melalui digitalisasi informasi desa.
@@ -14,12 +14,11 @@
 
 ## 📖 Tentang Proyek
 
-Website ini adalah platform web modern yang dirancang untuk mendigitalisasi dan mempublikasikan informasi dari dua desa di Pulau Obi, yaitu **Desa Kawasi** dan **Desa Soligi**. Platform ini menyajikan berbagai konten mulai dari profil desa, berita terkini, kekayaan budaya, potensi UMKM, keanekaragaman hayati (TOGA & Fauna), hingga dokumentasi kegiatan KKN.
+Website ini adalah platform web modern yang dirancang untuk mendigitalisasi dan mempublikasikan informasi dari dua desa di Pulau Obi, yaitu **Desa Kawasi** dan **Desa Soligi**. Platform ini menyajikan berbagai konten mulai dari profil desa, kekayaan budaya, potensi UMKM, keanekaragaman hayati (TOGA & Fauna), hingga dokumentasi kegiatan KKN.
 
 ### ✨ Fitur Unggulan
 
 - 🗺️ **Peta Interaktif SVG** — Jelajahi wilayah Kawasi & Soligi dengan animasi GSAP yang smooth
-- 📰 **Portal Berita** — Informasi terkini dengan layout majalah elegan dan gambar rotasi 3D
 - 🎭 **Artikel Budaya** — Dokumentasi tradisi, kuliner, kearifan bahari, dan seni lokal
 - 🏪 **Direktori UMKM** — Showcase produk lokal dengan kategori, galeri, dan highlight fitur
 - 🌿 **Ensiklopedia TOGA** — Database tanaman obat keluarga beserta resep tradisional
@@ -52,7 +51,6 @@ website-jawara-obira/
 │   ├── (public pages)
 │   │   ├── page.tsx                 # Homepage
 │   │   ├── profil/                  # Profil desa + peta interaktif
-│   │   ├── berita/                  # Daftar & detail berita
 │   │   ├── budaya/                  # Artikel budaya
 │   │   ├── umkm/                    # Direktori UMKM
 │   │   ├── toga/                    # Tanaman obat
@@ -66,7 +64,6 @@ website-jawara-obira/
 │   │   └── login/                   # Halaman login
 │   │
 │   ├── admin/                       # Dashboard admin
-│   │   ├── berita/[id]/
 │   │   ├── budaya/[id]/
 │   │   ├── umkm/[id]/
 │   │   ├── toga/[id]/
@@ -87,7 +84,6 @@ website-jawara-obira/
 │
 ├── components/
 │   ├── admin/                       # Admin form components
-│   │   ├── NewsForm.tsx
 │   │   ├── CultureForm.tsx
 │   │   ├── UMKMForm.tsx
 │   │   ├── TogaPlantForm.tsx
@@ -121,7 +117,6 @@ Proyek ini menggunakan **Supabase** dengan entitas utama:
 | Tabel | Deskripsi |
 |-------|-----------|
 | `villages` | Data desa (Kawasi, Soligi) + statistik |
-| `news` | Artikel berita |
 | `culture_articles` | Artikel budaya & tradisi |
 | `umkm` + `umkm_gallery`, `umkm_features`, `umkm_products` | Data UMKM dengan relasi kompleks |
 | `toga_plants` | Tanaman obat keluarga (dengan JSONB recipes) |
@@ -186,15 +181,19 @@ npm start
 
 ## 🎨 Design System
 
-Proyek ini menggunakan custom color palette yang terinspirasi dari keindahan alam Pulau Obi:
+Proyek ini memakai tema **Retro Heritage / Neobrutalist Archive**: kertas arsip krem, palet oseanik-tropis, dan bayangan keras bergaya brutalist. Token lengkapnya didefinisikan di `app/globals.css` lewat `@theme` (Tailwind v4, tanpa `tailwind.config.ts`).
 
-| Color | Hex | Penggunaan |
+| Token | Hex | Penggunaan |
 |-------|-----|------------|
-| 🌊 **Ocean** | `#0284c7` | Primary color, CTA, links |
-| 🏖️ **Sand** | `#f5f0e6` | Background, cards |
-| 🌴 **Tropic** | `#16a34a` | Accent, highlights, nature |
+| `--color-background` / `--color-surface` | `#fef9f2` | Latar utama (kertas krem) |
+| `--color-primary` | `#006689` | Aksi utama, link, ring |
+| `--color-tertiary` | `#FEBE00` | Aksen emas, badge, highlight |
+| `--color-herbal` | `#2f6b4f` | Aksen domain TOGA |
+| `--color-on-surface` | `#1d1c18` | Teks utama, sekaligus warna hard-shadow |
 
-Font menggunakan kombinasi **Serif** untuk heading (nuansa klasik) dan **Sans-serif** untuk body text (modern & readable).
+Tipografi: **Abril Fatface** untuk heading (display serif, bobot tunggal) dan **Plus Jakarta Sans** untuk body.
+
+Panduan lengkap arsitektur, design system, dan standar UI/UX ada di [`CLAUDE.md`](CLAUDE.md).
 
 ---
 

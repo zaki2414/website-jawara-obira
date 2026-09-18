@@ -27,6 +27,30 @@ import { getJournalVillageTags, KKN_ACCENT_BORDERS } from "./kkn/kknCardStyles";
 
 type KKNProkerDoc = { url: string; caption: string };
 type KKNProkerVillage = { id: string; name: string; slug: string };
+export type KKNProkerMetric = { label: string; value: string };
+
+// Menerima array {label,value} yang baru (bentuk lurus, apa adanya jadi
+// kartu KPI) MAUPUN objek key-value bebas peninggalan cara lama (dulu diisi
+// manual lewat SQL, key-nya snake_case apa saja) — supaya form ini tidak
+// crash saat membuka entri lama yang isinya belum dimigrasikan admin ke
+// bentuk baru. Key snake_case dihumanisasi jadi label yang wajar dibaca.
+function normalizeMetrics(raw: KKNProkerData["impact_metrics"]): KKNProkerMetric[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((m): m is KKNProkerMetric => typeof m === "object" && m !== null && "label" in m)
+      .map((m) => ({ label: String(m.label ?? ""), value: String(m.value ?? "") }));
+  }
+  return Object.entries(raw)
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
+    .map(([key, value]) => ({
+      label: key
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" "),
+      value: Array.isArray(value) ? value.join(", ") : String(value),
+    }));
+}
 
 export interface KKNProkerData {
   id: string;
@@ -35,10 +59,13 @@ export interface KKNProkerData {
   village_slug?: string | null;
   villages?: { slug: string; name?: string } | null;
   short_description?: string | null;
-  goals?: string | null;
+  narrative?: string | null;
   image_url?: string | null;
-  impact_metrics?: Record<string, string> | null;
+  impact_metrics?: KKNProkerMetric[] | Record<string, unknown> | null;
   documentation?: KKNProkerDoc[] | string | null;
+  pemilik?: string | null;
+  waktu?: string | null;
+  featured?: boolean | null;
 }
 
 type KKNProkerFormProps = {
@@ -69,30 +96,40 @@ export default function KKNProkerForm({
   const [shortDesc, setShortDesc] = useState(
     initialData?.short_description || "",
   );
-  const [content, setContent] = useState(initialData?.goals || "");
+  const [content, setContent] = useState(initialData?.narrative || "");
+
+  // Pemilik & waktu — kolom sendiri-sendiri, SENGAJA terpisah dari
+  // documentation (yang sekarang murni galeri foto). Tiap proker adalah
+  // milik satu anak tim KKN; ini bylinenya, ditampilkan di hero halaman
+  // detail publik ("Digagas oleh {pemilik} · {waktu}").
+  const [pemilik, setPemilik] = useState(initialData?.pemilik || "");
+  const [waktu, setWaktu] = useState(initialData?.waktu || "");
+
+  // Penanda "tampilkan di seksi Program Kerja pada beranda /kkn". Tanpa ini,
+  // seksi itu cuma bisa mengurut created_at — dan 22 dari 23 proker punya
+  // created_at yang sama persis, jadi yang muncul di beranda praktis dipilih
+  // Postgres, bukan admin.
+  const [featured, setFeatured] = useState(Boolean(initialData?.featured));
 
   // Cover image (single)
   const [coverUrl, setCoverUrl] = useState(initialData?.image_url || "");
 
-  // Metrics (3 boxes)
-  const [metric1Num, setMetric1Num] = useState(
-    initialData?.impact_metrics?.m1_num || "",
+  // KPI publik — daftar {label, value} sepanjang apapun, bukan lagi 3 kotak
+  // tetap. Ini satu-satunya tempat angka pencapaian tampil ke publik
+  // sekarang (key_achievements dihapus — isinya cuma menulis ulang angka
+  // yang sama sebagai kalimat, tidak pernah tampil ke publik pula).
+  const defaultMetrics = normalizeMetrics(initialData?.impact_metrics);
+  const [metrics, setMetrics] = useState<KKNProkerMetric[]>(
+    defaultMetrics.length > 0 ? defaultMetrics : [{ label: "", value: "" }],
   );
-  const [metric1Label, setMetric1Label] = useState(
-    initialData?.impact_metrics?.m1_label || "",
-  );
-  const [metric2Num, setMetric2Num] = useState(
-    initialData?.impact_metrics?.m2_num || "",
-  );
-  const [metric2Label, setMetric2Label] = useState(
-    initialData?.impact_metrics?.m2_label || "",
-  );
-  const [metric3Num, setMetric3Num] = useState(
-    initialData?.impact_metrics?.m3_num || "",
-  );
-  const [metric3Label, setMetric3Label] = useState(
-    initialData?.impact_metrics?.m3_label || "",
-  );
+  const addMetric = () => setMetrics([...metrics, { label: "", value: "" }]);
+  const updateMetric = (i: number, field: "label" | "value", val: string) => {
+    const next = [...metrics];
+    next[i] = { ...next[i], [field]: val };
+    setMetrics(next);
+  };
+  const removeMetric = (i: number) =>
+    setMetrics(metrics.filter((_, idx) => idx !== i));
 
   // Extra images (documentation JSONB array)
   const defaultDocs: KKNProkerDoc[] =
@@ -135,14 +172,12 @@ export default function KKNProkerForm({
     setSlug("");
     setShortDesc("");
     setContent("");
+    setPemilik("");
+    setFeatured(false);
+    setWaktu("");
     setCoverUrl("");
     setVillage("");
-    setMetric1Num("");
-    setMetric1Label("");
-    setMetric2Num("");
-    setMetric2Label("");
-    setMetric3Num("");
-    setMetric3Label("");
+    setMetrics([{ label: "", value: "" }]);
     setExtraImages([
       { url: "", caption: "" },
       { url: "", caption: "" },
@@ -201,25 +236,22 @@ export default function KKNProkerForm({
 
       // Filter extra images: hanya yang ada URL-nya
       const validExtraImages = extraImages.filter((img) => img.url);
+      const validMetrics = metrics.filter((m) => m.label.trim() && m.value.trim());
 
       // Payload
       const payload = {
         title,
         slug,
         short_description: shortDesc,
-        goals: content,
-        impact_metrics: {
-          m1_num: metric1Num,
-          m1_label: metric1Label,
-          m2_num: metric2Num,
-          m2_label: metric2Label,
-          m3_num: metric3Num,
-          m3_label: metric3Label,
-        },
+        narrative: content,
+        pemilik: pemilik.trim() || null,
+        waktu: waktu.trim() || null,
+        impact_metrics: validMetrics.length > 0 ? validMetrics : null,
         documentation: validExtraImages.length > 0 ? validExtraImages : null,
         image_url: coverUrl || null,
         village_id: villageId,
         published: true,
+        featured,
       };
 
       if (isNew) {
@@ -248,7 +280,15 @@ export default function KKNProkerForm({
         }
       }, 1500);
     } catch (err) {
-      const errMessage = err instanceof Error ? err.message : "Terjadi kesalahan tidak dikenal";
+      let errMessage = err instanceof Error ? err.message : "Terjadi kesalahan tidak dikenal";
+      // PGRST204/42703 soal kolom `featured` = migrasinya belum dijalankan.
+      // Pesan asli Supabase ("could not find the 'featured' column ... in the
+      // schema cache") tidak memberi tahu apa yang harus dilakukan.
+      const code = (err as { code?: string })?.code;
+      if ((code === "PGRST204" || code === "42703") && /featured/i.test(errMessage)) {
+        errMessage =
+          "kolom `featured` belum ada di database. Jalankan scripts/add-kkn-proker-featured.sql di Supabase SQL Editor dulu, lalu simpan lagi.";
+      }
       console.error("Submit error:", err);
       setMessage({ type: "error", text: `Gagal: ${errMessage}` });
     } finally {
@@ -366,74 +406,112 @@ export default function KKNProkerForm({
           </div>
         </section>
 
-        {/* 4. 3 Kotak Metrik Dampak */}
+        {/* 4. Pemilik & Waktu (opsional) */}
         <section className="border-t-2 border-dashed border-outline-variant pt-6">
-          <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-3">
-            <BarChart3 className="size-5" aria-hidden="true" />
-            Dampak Program Kerja
+          <h3 className="font-serif text-lg font-black text-on-surface mb-1.5">
+            Pemilik & Waktu (Opsional)
           </h3>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="p-4 bg-background rounded-xl border-2 border-on-surface hard-shadow-sm">
-              <span className="text-xs font-bold text-primary block mb-2 uppercase tracking-wider">
-                Kotak Kiri
-              </span>
+          <p className="text-sm text-on-surface-variant mb-4">
+            Byline kecil di hero halaman detail — anak tim yang menggagas proker ini,
+            dan kapan dilaksanakan.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+                Pemilik Proker
+              </label>
               <input
                 type="text"
-                value={metric1Num}
-                onChange={(e) => setMetric1Num(e.target.value)}
-                placeholder="Angka (e.g. 50+)"
-                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm font-bold mb-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-              <input
-                type="text"
-                value={metric1Label}
-                onChange={(e) => setMetric1Label(e.target.value)}
-                placeholder="Label (e.g. Warga Terlibat)"
-                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface-variant text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                value={pemilik}
+                onChange={(e) => setPemilik(e.target.value)}
+                placeholder="Contoh: Raden Muhammad Nizam Ramadhan (Manajemen Sumberdaya Akuatik)"
+                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               />
             </div>
-            <div className="p-4 bg-background rounded-xl border-2 border-on-surface hard-shadow-sm">
-              <span className="text-xs font-bold text-on-tertiary block mb-2 uppercase tracking-wider">
-                Kotak Tengah
-              </span>
+            <div>
+              <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+                Waktu Pelaksanaan
+              </label>
               <input
                 type="text"
-                value={metric2Num}
-                onChange={(e) => setMetric2Num(e.target.value)}
-                placeholder="Angka (e.g. 12)"
-                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm font-bold mb-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-              <input
-                type="text"
-                value={metric2Label}
-                onChange={(e) => setMetric2Label(e.target.value)}
-                placeholder="Label (e.g. Buku Didonasikan)"
-                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface-variant text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-            </div>
-            <div className="p-4 bg-background rounded-xl border-2 border-on-surface hard-shadow-sm">
-              <span className="text-xs font-bold text-primary block mb-2 uppercase tracking-wider">
-                Kotak Kanan
-              </span>
-              <input
-                type="text"
-                value={metric3Num}
-                onChange={(e) => setMetric3Num(e.target.value)}
-                placeholder="Angka (e.g. 100%)"
-                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm font-bold mb-2 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-              <input
-                type="text"
-                value={metric3Label}
-                onChange={(e) => setMetric3Label(e.target.value)}
-                placeholder="Label (e.g. Sampah Diambil)"
-                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface-variant text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                value={waktu}
+                onChange={(e) => setWaktu(e.target.value)}
+                placeholder="Contoh: 26-31 Juli 2026"
+                className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               />
             </div>
           </div>
+
+          {/* Penanda sorotan beranda. Ditaruh di sini (bukan seksi sendiri)
+              karena sifatnya metadata penerbitan, sebaris dengan pemilik &
+              waktu — bukan isi proker. */}
+          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-on-surface bg-surface-container-low p-4">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(e) => setFeatured(e.target.checked)}
+              className="mt-0.5 size-5 shrink-0 cursor-pointer accent-primary"
+            />
+            <span>
+              <span className="block text-label-sm font-black uppercase tracking-wide text-on-surface">
+                Tampilkan di Beranda KKN
+              </span>
+              <span className="mt-1 block text-sm text-on-surface-variant">
+                Proker yang dicentang naik ke seksi &quot;Program Kerja&quot; di halaman
+                /kkn. Beranda menampilkan 4 proker; kalau yang dicentang kurang dari
+                itu, sisanya diisi otomatis oleh proker terbaru.
+              </span>
+            </span>
+          </label>
         </section>
 
-        {/* 5. Gambar Pendukung */}
+        {/* 5. KPI Dampak (satu-satunya angka pencapaian yang tampil publik) */}
+        <section className="border-t-2 border-dashed border-outline-variant pt-6">
+          <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-1.5">
+            <BarChart3 className="size-5" aria-hidden="true" />
+            KPI Dampak Program Kerja
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4">
+            Tampil sebagai kartu angka di halaman publik. Tambah sebanyak yang perlu —
+            tidak dibatasi 3 lagi. Label singkat, angka/nilai singkat (mis. label
+            &quot;Total Partisipan&quot;, nilai &quot;500&quot;).
+          </p>
+          <div className="space-y-3">
+            {metrics.map((m, i) => (
+              <div key={i} className="flex gap-3 items-start">
+                <input
+                  type="text"
+                  value={m.value}
+                  onChange={(e) => updateMetric(i, "value", e.target.value)}
+                  placeholder="Nilai (e.g. 500)"
+                  className="w-32 shrink-0 p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                <input
+                  type="text"
+                  value={m.label}
+                  onChange={(e) => updateMetric(i, "label", e.target.value)}
+                  placeholder="Label (e.g. Total Partisipan)"
+                  className="flex-1 p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface-variant text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeMetric(i)}
+                  aria-label="Hapus KPI ini"
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={addMetric} className="mt-3">
+            <Plus className="size-4" aria-hidden="true" />
+            Tambah KPI
+          </Button>
+        </section>
+
+        {/* 6. Gambar Pendukung */}
         <section className="border-t-2 border-dashed border-outline-variant pt-6">
           <h3 className="flex items-center gap-2 font-serif text-lg font-black text-on-surface mb-2">
             <Images className="size-5" aria-hidden="true" />
@@ -549,7 +627,7 @@ export default function KKNProkerForm({
           </div>
         </section>
 
-        {/* 6. Actions */}
+        {/* 7. Actions */}
         <div className="flex gap-4 pt-4 border-t-2 border-dashed border-outline-variant">
           <Button type="submit" variant="tertiary" loading={loading}>
             {!loading && <Save className="size-4" aria-hidden="true" />}

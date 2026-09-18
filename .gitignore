@@ -43,3 +43,9 @@ next-env.d.ts
 
 # ui audit scratch (screenshots, playwright scripts)
 .ui-audit/
+
+# playwright (smoke test)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

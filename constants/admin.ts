@@ -1,4 +1,4 @@
-import { Newspaper, Landmark, Images, Store, type LucideIcon } from "lucide-react";
+import { Landmark, Images, Store, type LucideIcon } from "lucide-react";
 
 export type AdminAccentTone = "primary" | "tertiary" | "cream";
 
@@ -14,7 +14,6 @@ export type AdminMenuIconKey =
   | "backpack"
   | "images"
   | "store"
-  | "newspaper"
   | "landmark"
   | "bird"
   | "sprout"
@@ -38,12 +37,17 @@ export type AdminMenuItem = {
 };
 
 // Layout lg: (posisi diminta persis, lihat lgArea per item):
-//   [KKN Hub  ][KKN Hub  ][Berita   ][Budaya   ]
-//   [UMKM     ][Galeri   ][Galeri   ][Fauna    ]
-//   [Desa     ][Toga     ][Peta     ][Peta     ]
+//   [KKN Hub  ][KKN Hub  ][Fauna    ][Budaya   ]
+//   [UMKM     ][Galeri   ][Galeri   ][Toga     ]
+//   [Desa     ][Desa     ][Peta     ][Peta     ]
 // `accent` pola diagonal: KKN Hub/Galeri/Peta (diagonal kiri-atas ke
 // kanan-bawah) = tertiary (kuning); Budaya (pojok kanan-atas) & Desa (pojok
 // kiri-bawah) = primary (biru); sisanya = cream.
+//
+// Delapan tile, bukan sembilan: seksi Berita dihapus seluruhnya (halaman
+// publik /berita, admin, komponen, dan query-nya). Desa dinaikkan jadi
+// `wide` supaya 4 kolom x 3 baris tetap terisi penuh tanpa sel bolong —
+// 4 tile wide (2 sel) + 4 tile compact (1 sel) = 12 sel.
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   {
     title: "KKN Hub",
@@ -56,12 +60,12 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     lgArea: "lg:col-start-1 lg:col-end-3 lg:row-start-1 lg:row-end-2",
   },
   {
-    title: "Manajemen Berita",
-    description: "Tambah, edit, atau hapus berita desa Kawasi & Soligi.",
-    href: "/admin/berita",
-    icon: "newspaper",
+    title: "Manajemen Fauna",
+    description: "Kelola data satwa endemik Pulau Obi.",
+    href: "/admin/fauna-obi",
+    icon: "bird",
     accent: "cream",
-    action: "Kelola Berita",
+    action: "Kelola Fauna Obi",
     size: "compact",
     lgArea: "lg:col-start-3 lg:col-end-4 lg:row-start-1 lg:row-end-2",
   },
@@ -96,26 +100,6 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     lgArea: "lg:col-start-2 lg:col-end-4 lg:row-start-2 lg:row-end-3",
   },
   {
-    title: "Manajemen Fauna",
-    description: "Kelola data satwa endemik Pulau Obi.",
-    href: "/admin/fauna-obi",
-    icon: "bird",
-    accent: "cream",
-    action: "Kelola Fauna Obi",
-    size: "compact",
-    lgArea: "lg:col-start-4 lg:col-end-5 lg:row-start-2 lg:row-end-3",
-  },
-  {
-    title: "Profil Desa",
-    description: "Kelola julukan, deskripsi, statistik & foto Desa Kawasi dan Soligi.",
-    href: "/admin/desa",
-    icon: "compass",
-    accent: "primary",
-    action: "Kelola Desa",
-    size: "compact",
-    lgArea: "lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4",
-  },
-  {
     title: "Manajemen Toga",
     description: "Kelola koleksi tanaman obat keluarga.",
     href: "/admin/toga",
@@ -123,7 +107,17 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     accent: "cream",
     action: "Kelola Toga",
     size: "compact",
-    lgArea: "lg:col-start-2 lg:col-end-3 lg:row-start-3 lg:row-end-4",
+    lgArea: "lg:col-start-4 lg:col-end-5 lg:row-start-2 lg:row-end-3",
+  },
+  {
+    title: "Profil Desa",
+    description: "Kelola deskripsi, statistik & foto Desa Kawasi dan Soligi.",
+    href: "/admin/desa",
+    icon: "compass",
+    accent: "primary",
+    action: "Kelola Desa",
+    size: "wide",
+    lgArea: "lg:col-start-1 lg:col-end-3 lg:row-start-3 lg:row-end-4",
   },
   {
     title: "Peta Fasilitas",
@@ -137,7 +131,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   },
 ];
 
-export type AdminStatKey = "news" | "culture" | "gallery" | "umkm";
+export type AdminStatKey = "culture" | "gallery" | "umkm";
 
 export type AdminStatMeta = {
   key: AdminStatKey;
@@ -148,13 +142,6 @@ export type AdminStatMeta = {
 };
 
 export const ADMIN_STAT_META: AdminStatMeta[] = [
-  {
-    key: "news",
-    label: "Total Berita",
-    icon: Newspaper,
-    accent: "primary",
-    emptyHint: "Belum ada berita",
-  },
   {
     key: "culture",
     label: "Artikel Budaya",

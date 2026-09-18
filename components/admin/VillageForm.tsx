@@ -16,10 +16,7 @@ export type VillageFormInitialData = {
   id: string;
   slug: string;
   name: string;
-  title: string | null;
   description: string | null;
-  long_description: string | null;
-  highlight: string | null;
   thumbnail_url: string | null;
   village_statistics: {
     population: number | null;
@@ -38,16 +35,23 @@ type VillageFormProps = {
 // di sini). Nama & slug SENGAJA tidak bisa diedit — slug dipakai sebagai
 // VillageKey literal ("kawasi"/"soligi") di banyak tempat kode (peta
 // kadaster, picker, dst.), mengubahnya lewat form akan memutus semua itu.
+//
+// Form ini dulu juga punya field "Julukan/Title", "Highlight", dan
+// "Deskripsi Lengkap" (long_description). Ketiganya DIHAPUS: kolomnya tidak
+// pernah dibuat di tabel `villages`, jadi setiap submit selalu gagal dengan
+// PGRST204 ("Could not find the 'highlight' column...") — Postgrest menolak
+// SELURUH update kalau satu saja field di payload tidak dikenal. Itu
+// sebabnya admin tidak bisa menyimpan perubahan apa pun lewat form ini,
+// termasuk sekadar mengganti thumbnail. Form sekarang dibatasi persis ke
+// kolom yang benar-benar ada: name (baca saja), description, thumbnail_url,
+// dan statistik desa.
 export default function VillageForm({ initialData }: VillageFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const [title, setTitle] = useState(initialData.title || "");
   const [description, setDescription] = useState(initialData.description || "");
-  const [longDescription, setLongDescription] = useState(initialData.long_description || "");
-  const [highlight, setHighlight] = useState(initialData.highlight || "");
   const [thumbnailUrl, setThumbnailUrl] = useState(initialData.thumbnail_url || "");
 
   const [population, setPopulation] = useState(
@@ -76,10 +80,7 @@ export default function VillageForm({ initialData }: VillageFormProps) {
     try {
       const payload: VillagePayload = {
         name: initialData.name,
-        title: title.trim() || null,
         description: description.trim() || null,
-        long_description: longDescription.trim() || null,
-        highlight: highlight.trim() || null,
         thumbnail_url: thumbnailUrl || null,
       };
       const statsPayload: VillageStatisticsPayload = {
@@ -90,11 +91,22 @@ export default function VillageForm({ initialData }: VillageFormProps) {
       };
 
       const supabase = createClient();
-      const { error: villageError } = await supabase
+      // .select() SENGAJA dipertahankan (bukan cuma { error }) — Postgrest
+      // tidak menganggap UPDATE yang match 0 baris (ditolak RLS) sebagai
+      // error sama sekali, cuma balik array kosong. Tanpa cek eksplisit ini,
+      // form pernah menampilkan "berhasil diperbarui" padahal RLS diam-diam
+      // menolak seluruh perubahan (lihat scripts/fix-villages-rls-policies.sql).
+      const { data: villageData, error: villageError } = await supabase
         .from("villages")
         .update(payload)
-        .eq("id", initialData.id);
+        .eq("id", initialData.id)
+        .select();
       if (villageError) throw villageError;
+      if (!villageData || villageData.length === 0) {
+        throw new Error(
+          "Update ditolak diam-diam oleh Supabase (kemungkinan RLS) — tidak ada baris yang berubah.",
+        );
+      }
 
       const { error: statsError } = await supabase
         .from("village_statistics")
@@ -148,47 +160,11 @@ export default function VillageForm({ initialData }: VillageFormProps) {
 
         <div>
           <label className="mb-1.5 block text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
-            Julukan / Title
-          </label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Contoh: Penjaga Samudera"
-            className="w-full rounded-lg border-2 border-on-surface bg-background p-3 text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
-            Highlight (badge di foto)
-          </label>
-          <input
-            value={highlight}
-            onChange={(e) => setHighlight(e.target.value)}
-            placeholder="Contoh: Potensi Maritim"
-            className="w-full rounded-lg border-2 border-on-surface bg-background p-3 text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
-            Deskripsi Singkat
+            Deskripsi
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            className="w-full rounded-lg border-2 border-on-surface bg-background p-3 text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-label-sm font-black uppercase tracking-wide text-on-surface-variant">
-            Deskripsi Lengkap (tampil di panel detail /profil)
-          </label>
-          <textarea
-            value={longDescription}
-            onChange={(e) => setLongDescription(e.target.value)}
             rows={4}
             className="w-full rounded-lg border-2 border-on-surface bg-background p-3 text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
@@ -294,11 +270,8 @@ export default function VillageForm({ initialData }: VillageFormProps) {
               <Icon className="size-4 shrink-0 text-primary" aria-hidden="true" />
               {initialData.name}
             </h3>
-            {title && (
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">{title}</p>
-            )}
             <p className="line-clamp-3 text-sm text-on-surface-variant">
-              {longDescription || "Deskripsi lengkap akan tampil di sini."}
+              {description || "Deskripsi akan tampil di sini."}
             </p>
           </div>
         </div>

@@ -60,6 +60,9 @@ export default function FaunaForm({ initialData, isNew }: FaunaFormProps) {
     initialData?.physical_characteristics || "",
   );
   const [thumbnail, setThumbnail] = useState(initialData?.thumbnail_url || "");
+  const [imageSource, setImageSource] = useState(
+    initialData?.image_source || "",
+  );
 
   const defaultGallery = parseFaunaImages(initialData?.documentations);
   const [gallery, setGallery] = useState<FaunaImage[]>(
@@ -117,6 +120,7 @@ export default function FaunaForm({ initialData, isNew }: FaunaFormProps) {
     setDescription("");
     setPhysical("");
     setThumbnail("");
+    setImageSource("");
     setGallery([
       { url: "", caption: "" },
       { url: "", caption: "" },
@@ -157,6 +161,7 @@ export default function FaunaForm({ initialData, isNew }: FaunaFormProps) {
         description,
         physical_characteristics: physical,
         thumbnail_url: thumbnail || null,
+        image_source: imageSource.trim() || null,
         documentations: validGallery.length > 0 ? validGallery : null,
       };
 
@@ -418,6 +423,22 @@ export default function FaunaForm({ initialData, isNew }: FaunaFormProps) {
             onChange={setThumbnail}
             label="Upload Foto Utama"
           />
+          <div className="mt-3">
+            <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
+              Sumber Gambar
+            </label>
+            <input
+              type="text"
+              value={imageSource}
+              onChange={(e) => setImageSource(e.target.value)}
+              className="w-full p-3 border-2 border-on-surface rounded-lg bg-background text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              placeholder="Contoh: Dok. pribadi, Wikimedia Commons, nama fotografer..."
+            />
+            <p className="mt-1.5 text-xs text-on-surface-variant/70">
+              Opsional — tampil sebagai keterangan kecil di foto utama halaman
+              publik.
+            </p>
+          </div>
         </div>
 
         {/* Gallery Section */}

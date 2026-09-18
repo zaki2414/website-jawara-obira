@@ -215,9 +215,9 @@ export function KKNSection({
               }
               transition={{
                 scale: {
-                  type: "spring" as const,
-                  stiffness: 160,
-                  damping: 12,
+                  // Kurva halus, bukan spring — lihat catatan di FaunaGrid.tsx.
+                  ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+                  duration: 0.7,
                   delay: 0.5,
                 },
                 y: { duration: 4, repeat: Infinity, ease: "easeInOut" },
@@ -257,13 +257,27 @@ export function KKNSection({
               </Button>
             </div>
 
-            {/* Cards Display Grid */}
-            <Reveal kind="stagger" className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Grid menyesuaikan JUMLAH proker unggulan, bukan selalu 3 kolom.
+                getFeaturedKKNProkers(3) mengambil MAKSIMAL tiga; di awal masa
+                KKN isinya sering baru satu. Dengan md:grid-cols-3 tetap, satu
+                kartu menyisakan dua pertiga baris kosong di kanan dan terbaca
+                seperti dua kartu yang gagal dimuat, bukan sebagai daftar yang
+                memang masih pendek. */}
+            <Reveal
+              kind="stagger"
+              className={`grid gap-8 ${
+                featuredProkers.length >= 3
+                  ? "grid-cols-1 md:grid-cols-3"
+                  : featuredProkers.length === 2
+                    ? "grid-cols-1 md:grid-cols-2"
+                    : "grid-cols-1 max-w-xl"
+              }`}
+            >
               {featuredProkers.map((proker) => {
                 const docs = parseJsonField(proker.documentation);
                 const thumb =
                   docs[0]?.url || docs[0]?.image_url || proker.image_url;
-                const metrics = proker.impact_metrics || {};
+                const metrics = proker.impact_metrics || [];
 
                 return (
                   <div key={proker.id} data-reveal-item className="h-full">
@@ -322,30 +336,21 @@ export function KKNSection({
                         </p>
 
                         {/* Impact Metrics Badges */}
-                        {metrics &&
-                          typeof metrics === "object" &&
-                          Object.keys(metrics).length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-4 border-t-2 border-dashed border-on-surface/10">
-                              {Object.entries(metrics)
-                                .filter(
-                                  ([k, v]) =>
-                                    v && v !== "" && String(k).includes("_num"),
-                                )
-                                .slice(0, 2)
-                                .map(([k, v]) => {
-                                  const labelKey = k.replace("_num", "_label");
-                                  const label = metrics[labelKey] || k;
-                                  return (
-                                    <span
-                                      key={k}
-                                      className="text-label-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-black border-2 border-primary/20"
-                                    >
-                                      {v} {label}
-                                    </span>
-                                  );
-                                })}
-                            </div>
-                          )}
+                        {metrics.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-4 border-t-2 border-dashed border-on-surface/10">
+                            {metrics
+                              .filter((m) => m.label && m.value)
+                              .slice(0, 2)
+                              .map((m) => (
+                                <span
+                                  key={m.label}
+                                  className="text-label-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-black border-2 border-primary/20"
+                                >
+                                  {m.value} {m.label}
+                                </span>
+                              ))}
+                          </div>
+                        )}
                       </div>
                     </Link>
                   </div>

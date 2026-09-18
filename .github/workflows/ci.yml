@@ -1,0 +1,49 @@
+name: CI
+
+# Tujuan workflow ini SEMPIT tapi penting: menangkap kode yang tidak bisa
+# di-build SEBELUM ter-deploy, bukan setelah situs sudah rusak di produksi.
+# Sebelum ada ini, satu-satunya yang berjalan otomatis di repo ini adalah
+# keep-alive ping ke Supabase.
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # Lint TIDAK memblokir: repo ini masih punya 12 error lint lama
+      # (mayoritas aturan React Compiler "setState synchronously within an
+      # effect" di form admin & not-found.tsx) yang belum dibereskan. Dibuat
+      # blocking sekarang berarti CI merah terus dan orang berhenti
+      # membacanya. Naikkan jadi blocking begitu utang itu lunas —
+      # lihat TODO_BELUM_DIKERJAKAN.txt.
+      - name: Lint (belum blocking)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        # Build butuh env Supabase karena beberapa halaman di-prerender.
+        # Nilainya boleh nilai publik (anon/publishable key) — JANGAN pernah
+        # menaruh secret key di sini.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: npm run build

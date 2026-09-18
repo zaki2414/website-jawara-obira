@@ -22,7 +22,7 @@ import type { VillageKey } from "./profil";
 // Baris tabel Supabase `map_facilities` — dikelola dari /admin/peta.
 // feature_id ("fasum-0".. untuk Kawasi, "fasum-soligi-0".. untuk Soligi)
 // adalah kunci pencocokan ke properties.feature_id di public/data/fasum*.geojson,
-// DIINJEKSI SAAT KONVERSI (scripts/convert-shp.mjs) karena shapefile sumber
+// DIINJEKSI SAAT KONVERSI (data-sources/convert-shp.mjs) karena shapefile sumber
 // tidak punya primary key sendiri (id selalu null). Layer bangunan TIDAK
 // pernah punya baris di tabel ini — cuma fasum yang dikelola admin.
 export type MapFacility = {
@@ -35,7 +35,7 @@ export type MapFacility = {
 };
 
 // Properti fasum yang sudah DINORMALISASI ke bentuk ini oleh
-// scripts/convert-shp.mjs — Kawasi sumbernya sudah punya kolom "Nama Fasum"
+// data-sources/convert-shp.mjs — Kawasi sumbernya sudah punya kolom "Nama Fasum"
 // asli, Soligi sumbernya kolom "Ket"/"Keterangan" beda nama tapi dipetakan
 // ke field yang sama di sini supaya VillageCadastralMap.tsx tidak perlu tahu
 // bedanya sama sekali.

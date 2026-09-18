@@ -1,12 +1,12 @@
-// scripts/convert-shp.mjs
+// data-sources/convert-shp.mjs
 //
 // Konversi shapefile QGIS jadi GeoJSON siap-pakai di public/data/*.geojson.
 // Reprojection CRS (mis. WGS 1984 UTM Zone 52S -> WGS84/EPSG:4326) ditangani
 // otomatis oleh shpjs lewat isi file .prj — tidak perlu export manual dari
 // QGIS. Sumbernya:
-//   - public/Peta Bangunan/                              (Desa Kawasi, bangunan)
-//   - public/Peta Fasilitas Umum/                         (Desa Kawasi, fasum)
-//   - public/Peta Fasilitas Umum dan Bangunan Desa Soligi/ (Desa Soligi, keduanya)
+//   - data-sources/Peta Bangunan/                              (Desa Kawasi, bangunan)
+//   - data-sources/Peta Fasilitas Umum/                         (Desa Kawasi, fasum)
+//   - data-sources/Peta Fasilitas Umum dan Bangunan Desa Soligi/ (Desa Soligi, keduanya)
 //
 // Data Soligi punya SKEMA MENTAH BERBEDA dari Kawasi (dusun1/2/3 = footprint
 // bangunan hasil deteksi otomatis dengan kolom Plus Code/area/confidence,
@@ -62,7 +62,7 @@ async function convertKawasi() {
   ];
 
   for (const { folder, baseName, outName } of sources) {
-    const dir = path.join(BASE, "public", folder);
+    const dir = path.join(BASE, "data-sources", folder);
     const geojson = await loadShp(dir, baseName);
 
     // id bawaan dari .dbf selalu null (shapefile tidak punya primary key) —
@@ -83,7 +83,7 @@ async function convertKawasi() {
 const SOLIGI_DIR = "Peta Fasilitas Umum dan Bangunan Desa Soligi";
 
 async function convertSoligiBangunan() {
-  const dir = path.join(BASE, "public", SOLIGI_DIR);
+  const dir = path.join(BASE, "data-sources", SOLIGI_DIR);
   const merged = { type: "FeatureCollection", features: [] };
 
   // dusun1/2/3 = 3 shapefile footprint bangunan terpisah per dusun (hasil
@@ -110,7 +110,7 @@ async function convertSoligiBangunan() {
 }
 
 async function convertSoligiFasum() {
-  const dir = path.join(BASE, "public", SOLIGI_DIR);
+  const dir = path.join(BASE, "data-sources", SOLIGI_DIR);
   const merged = { type: "FeatureCollection", features: [] };
 
   // fasum.shp: nama fasilitas ada di kolom "Ket", TAPI satu baris (SMPN 39)

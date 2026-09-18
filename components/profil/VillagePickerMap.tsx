@@ -2,7 +2,6 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { MAP_THEME, type VillageKey } from "@/constants/profil";
 
@@ -17,7 +16,6 @@ type VillagePickerMapProps = {
 // SVG+GSAP-nya, detail desa terpilih pindah ke VillageDetailPanel.tsx).
 export function VillagePickerMap({ village, onSelect }: VillagePickerMapProps) {
   const mapRef = useRef<SVGSVGElement>(null);
-  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -106,11 +104,12 @@ export function VillagePickerMap({ village, onSelect }: VillagePickerMapProps) {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-primary-container)_0%,transparent_65%)] opacity-25" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#1d1c18_1px,transparent_1px)] bg-size-[22px_22px] opacity-[0.05]" />
 
-        <motion.div
-          className="pointer-events-none absolute left-1/2 top-1/2 size-[85%] max-w-125 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed border-primary/20"
-          animate={shouldReduceMotion ? undefined : { rotate: 360 }}
-          transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
-        />
+        {/* Cincin ini dulu berputar 360° tanpa henti (90 detik per putaran).
+            Border DASHED yang berotasi termasuk yang paling mahal di-repaint —
+            setiap strip harus digambar ulang tiap frame — dan itu berjalan
+            selamanya di halaman yang juga memuat peta Leaflet. Cincinnya
+            dipertahankan sebagai motif atlas, rotasinya dibuang. */}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 size-[85%] max-w-125 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed border-primary/20" />
         <div className="pointer-events-none absolute left-1/2 top-1/2 size-[60%] max-w-75 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-dashed border-primary/15" />
 
         <svg

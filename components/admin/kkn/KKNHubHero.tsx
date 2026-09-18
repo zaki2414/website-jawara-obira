@@ -13,12 +13,11 @@ export function KKNHubHero() {
       <AdminOrnaments variant="budaya" />
 
       <div className="relative z-10">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 text-label-sm font-black uppercase tracking-widest text-on-surface-variant">
-            <span className="size-1.5 rounded-full bg-tertiary" aria-hidden="true" />
-            Ekspedisi Kawasi &amp; Soligi
-          </span>
-          <Badge variant="solid-tertiary" aria-hidden="true">
+        {/* Tanpa label kicker di atas judul — sama seperti DashboardHero.
+            "Ekspedisi Kawasi & Soligi" dulu duduk di sini dan tidak menambah
+            apa pun di atas judul yang sudah menyebut program KKN-nya. */}
+        <div className="mb-3 flex justify-end">
+          <Badge variant="solid-tertiary">
             <Compass aria-hidden="true" />
             KKN Hub
           </Badge>
@@ -35,9 +34,9 @@ export function KKNHubHero() {
             </p>
           </div>
 
-          <Link
+          <Link prefetch={false}
             href="/admin"
-            className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border-2 border-on-surface bg-background px-4 py-2.5 text-label-md font-black uppercase tracking-wide text-on-surface hard-shadow-sm hard-shadow-hover press-effect transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border-2 border-on-surface bg-background px-4 py-2.5 text-label-md font-black uppercase tracking-wide text-on-surface hard-shadow-sm hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Dashboard

@@ -8,9 +8,9 @@
   /* ═══════════════════════════════════════════════════════════ */
   /* FONT DEFINITIONS (self-hosted via next/font/google, lihat app/layout.tsx) */
   /* ═══════════════════════════════════════════════════════════ */
-  --font-sans: var(--font-work-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-libre-caslon), ui-serif, Georgia, serif;
-  --font-heading: var(--font-libre-caslon), ui-serif, Georgia, serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-display), ui-serif, Georgia, serif;
+  --font-heading: var(--font-display), ui-serif, Georgia, serif;
 
   /* ═══════════════════════════════════════════════════════════ */
   /* COLOR PALETTE - Retro Heritage (Oceanic) */
@@ -32,13 +32,25 @@
   --color-secondary: #5e5e5e;
   --color-secondary-container: #e2e2e2;
 
-  --color-tertiary: #FEBE00;
   --color-cream: #E6D2B1;
   --color-cream-container: #F3E9D7;
   --color-on-cream: #5C4A2E;
+  --color-tertiary: #FEBE00;
   --color-tertiary-container: #FFDF66;
   --color-tertiary-fixed: #FFF1CC;
   --color-on-tertiary: #423A21;
+
+  /* ── HERBAL (aksen domain TOGA) ────────────────────────────────
+     Ditambahkan karena palet lama tidak punya satu pun hijau semantik:
+     halaman Tanaman Obat terpaksa memakai emas/tertiary, warna yang tidak
+     mengatakan apa-apa tentang tumbuhan. Hijaunya sengaja diturunkan
+     saturasinya dan digeser ke arah teal supaya duduk di antara
+     --color-primary (#006689) dan --color-tertiary (#FEBE00) — bukan hijau
+     "safe/success" (#22c55e) yang neon dan sudah punya arti lain di sistem
+     status IUCN. */
+  --color-herbal: #2f6b4f;
+  --color-herbal-container: #cfe4d5;
+  --color-on-herbal: #fef9f2;
 
   --color-on-surface: #1d1c18;
   --color-on-surface-variant: #3e484e;
@@ -184,6 +196,13 @@
   /* ═══════════════════════════════════════════════════════════ */
   /* HARD SHADOW TOKENS (Brutalist) — dipakai oleh utility .hard-shadow-* */
   /* ═══════════════════════════════════════════════════════════ */
+  /* Warna bayangan brutalist. BUKAN hitam murni: #000 di sebelah kertas krem
+     #fef9f2 terbaca sebagai benda asing yang tidak berasal dari palet mana
+     pun — ia "dingin" sementara seluruh halaman hangat. Dipakai tinta yang
+     memang sudah jadi warna teks situs ini (--color-on-surface #1d1c18),
+     ditulis sebagai kanal RGB supaya masih bisa diberi alpha per utilitas. */
+  --shadow-hard-rgb: 29 28 24;
+
   --shadow-hard-offset-sm: 2px;
   --shadow-hard-offset-md: 4px;
   --shadow-hard-offset-lg: 6px;
@@ -293,6 +312,17 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    /* Abril Fatface cuma punya satu bobot, dan bobot itu sudah sangat berat.
+       Tanpa baris ini, `font-black` di markup memaksa browser menebalkannya
+       secara sintetis: kontur di dalam huruf (mata a, e, o) saling menutup
+       dan judulnya berubah jadi gumpalan hitam. font-synthesis-weight: none
+       mematikan penebalan palsu itu, jadi huruf selalu dirender pada bentuk
+       aslinya berapa pun font-weight yang diminta markup. */
+    font-synthesis-weight: none;
+  }
+
+  .font-serif {
+    font-synthesis-weight: none;
   }
 
   /* Smooth transitions global untuk elemen interaktif */
@@ -389,36 +419,46 @@
 /* UTILITY CLASSES */
 /* ═══════════════════════════════════════════════════════════ */
 @layer utilities {
-  /* Tekstur Kertas Arsip */
+  /* Tekstur Kertas Arsip.
+     
+     Teksturnya SELF-HOSTED di /textures/. Sebelumnya kedua kelas ini menarik
+     PNG dari transparenttextures.com di setiap kunjungan — pihak ketiga di
+     jalur render kritis, dan salah satunya (aged-paper.png) ternyata sudah
+     404 entah sejak kapan, jadi 28 pemakaian .bg-aged-paper selama ini
+     merender tanpa tekstur sama sekali tanpa ada yang menyadari: background-
+     image yang gagal tidak menampilkan apa-apa, tidak seperti <img> rusak.
+     
+     Keduanya kini memakai berkas yang sama dengan warna dasar yang berbeda —
+     itulah yang sebenarnya membedakan keduanya secara visual. */
   .bg-aged-paper {
     background-color: #f5f0e6;
-    background-image: url("https://www.transparenttextures.com/patterns/aged-paper.png");
+    background-image: url("/textures/natural-paper.png");
   }
 
   .bg-natural-paper {
     background-color: #fef9f2;
-    background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+    background-image: url("/textures/natural-paper.png");
   }
 
   /* Utilitas Blok Bayangan Kaku (Hard Shadow) Brutalist — semua offset/opacity dari token @theme */
   .hard-shadow {
-    box-shadow: var(--shadow-hard-offset-md) var(--shadow-hard-offset-md) 0px rgb(0 0 0 / var(--shadow-hard-opacity-md));
+    box-shadow: var(--shadow-hard-offset-md) var(--shadow-hard-offset-md) 0px rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-md));
   }
 
   .hard-shadow-sm {
-    box-shadow: var(--shadow-hard-offset-sm) var(--shadow-hard-offset-sm) 0px rgb(0 0 0 / var(--shadow-hard-opacity-sm));
+    box-shadow: var(--shadow-hard-offset-sm) var(--shadow-hard-offset-sm) 0px rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-sm));
   }
 
   .hard-shadow-md {
-    box-shadow: var(--shadow-hard-offset-lg) var(--shadow-hard-offset-lg) 0px rgb(0 0 0 / var(--shadow-hard-opacity-md));
+    box-shadow: var(--shadow-hard-offset-lg) var(--shadow-hard-offset-lg) 0px rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-md));
   }
 
   .hard-shadow-lg {
-    box-shadow: var(--shadow-hard-offset-xl) var(--shadow-hard-offset-xl) 0px rgb(0 0 0 / var(--shadow-hard-opacity-lg));
+    box-shadow: var(--shadow-hard-offset-xl) var(--shadow-hard-offset-xl) 0px rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-lg));
   }
 
   .hard-shadow-xl {
-    box-shadow: var(--shadow-hard-offset-2xl) var(--shadow-hard-offset-2xl) 0px rgb(0 0 0 / var(--shadow-hard-opacity-xl));
+    box-shadow: var(--shadow-hard-offset-2xl) var(--shadow-hard-offset-2xl) 0px rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-xl));
   }
 
   .hard-shadow-primary {
@@ -445,7 +485,7 @@
         calc(var(--shadow-hard-offset-sm) * -1)
       );
       box-shadow: var(--shadow-hard-offset-xl) var(--shadow-hard-offset-xl) 0px
-        rgb(0 0 0 / var(--shadow-hard-opacity-xl));
+        rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-xl));
     }
   }
 
@@ -457,8 +497,103 @@
 
   .press-effect:active {
     transform: translate(var(--shadow-hard-offset-sm), var(--shadow-hard-offset-sm));
-    box-shadow: var(--shadow-hard-offset-sm) var(--shadow-hard-offset-sm) 0px rgb(0 0 0 / var(--shadow-hard-opacity-xl));
+    box-shadow: var(--shadow-hard-offset-sm) var(--shadow-hard-offset-sm) 0px rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-xl));
   }
+
+  /* ── ORNAMEN BERGERAK ───────────────────────────────────────────
+     DUA lapis gerak, dan keduanya perlu:
+
+     1. `ornament-float` — animasi waktu biasa yang SELALU berjalan, sangat
+        pelan (80–110 detik per putaran). Ini yang menjamin ornamen terlihat
+        hidup bahkan saat pembaca diam. Versi sebelumnya hanya mengandalkan
+        timeline gulir, jadi begitu halaman berhenti digulir ornamennya
+        membeku total — terbaca sebagai gambar diam, bukan gerak.
+
+     2. `animation-timeline: view()` pada lapis LUAR — hanyut mengikuti posisi
+        elemen melintasi layar, dijalankan di luar main thread.
+
+     Rentangnya juga dibesarkan. Versi sebelumnya bergerak ±7% dan ±10° pada
+     opacity 0.06; secara teknis berjalan, tapi terlalu kecil untuk terlihat.
+     Sekarang rotasinya sampai ±26° dan pergeserannya ±14%. */
+  @keyframes ornament-float {
+    0% {
+      transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+    50% {
+      transform: rotate(14deg) translate3d(0, -3%, 0);
+    }
+    100% {
+      transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes ornament-float-reverse {
+    0% {
+      transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+    50% {
+      transform: rotate(-14deg) translate3d(0, 3%, 0);
+    }
+    100% {
+      transform: rotate(0deg) translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes ornament-drift {
+    from {
+      transform: translate3d(0, 14%, 0) rotate(-13deg);
+    }
+    to {
+      transform: translate3d(0, -14%, 0) rotate(13deg);
+    }
+  }
+
+  @keyframes ornament-drift-reverse {
+    from {
+      transform: translate3d(0, 14%, 0) rotate(13deg);
+    }
+    to {
+      transform: translate3d(0, -14%, 0) rotate(-13deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Lapis DALAM: gerak abadi yang pelan. Selalu jalan, jadi tidak ada
+       halaman yang ornamennya benar-benar diam. */
+    .ornament-float {
+      animation: ornament-float 88s ease-in-out infinite;
+      will-change: transform;
+    }
+    .ornament-float-reverse {
+      animation: ornament-float-reverse 104s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    /* Lapis LUAR: hanyut mengikuti gulir. Hanya aktif bila browser mendukung
+       timeline gulir; kalau tidak, lapis dalam tetap membuatnya bergerak. */
+    @supports (animation-timeline: view()) {
+      .ornament-drift {
+        animation: ornament-drift linear both;
+        animation-timeline: view();
+        animation-range: cover 0% cover 100%;
+        will-change: transform;
+      }
+      .ornament-drift-reverse {
+        animation: ornament-drift-reverse linear both;
+        animation-timeline: view();
+        animation-range: cover 0% cover 100%;
+        will-change: transform;
+      }
+    }
+  }
+
+  /* CATATAN: kelas .scroll-spin / .scroll-weave-* / .scroll-grow /
+     .scroll-aperture yang dulu ada di sini SUDAH DIHAPUS. Semuanya memakai
+     `animation-timeline: scroll()`, yang hanya bekerja di keluarga Chromium —
+     di Safari dan Firefox deklarasinya diabaikan tanpa error, jadi figur hero
+     dan ornamen kompas tidak bergerak sama sekali di sana. Penggantinya
+     components/shared/ScrollSpin.tsx, yang menghitung rotasi di JavaScript
+     dan karenanya berjalan di semua browser. */
 
   /* Sembunyikan scrollbar bawaan browser untuk carousel/filter horizontal-scroll */
   .scrollbar-none {
@@ -535,7 +670,7 @@
   border-radius: 0.75rem;
   border: 2px solid var(--color-on-surface);
   box-shadow: var(--shadow-hard-offset-sm) var(--shadow-hard-offset-sm) 0px
-    rgba(0, 0, 0, var(--shadow-hard-opacity-sm));
+    rgb(var(--shadow-hard-rgb) / var(--shadow-hard-opacity-sm));
   background-color: var(--color-background);
 }
 

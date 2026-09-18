@@ -46,7 +46,7 @@ export function BudayaSectionBanner({
               <span key={crumb.label} className="flex items-center gap-2">
                 {i > 0 && <ChevronRight className="size-3.5" aria-hidden="true" />}
                 {crumb.href ? (
-                  <Link href={crumb.href} className="transition-colors hover:text-on-surface">
+                  <Link prefetch={false} href={crumb.href} className="transition-colors hover:text-on-surface">
                     {crumb.label}
                   </Link>
                 ) : (
@@ -72,9 +72,9 @@ export function BudayaSectionBanner({
           </div>
 
           {action && (
-            <Link
+            <Link prefetch={false}
               href={action.href}
-              className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border-2 border-on-surface bg-background px-4 py-2.5 text-label-md font-black uppercase tracking-wide text-on-surface hard-shadow-sm hard-shadow-hover press-effect transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border-2 border-on-surface bg-background px-4 py-2.5 text-label-md font-black uppercase tracking-wide text-on-surface hard-shadow-sm hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <action.icon className="size-4" aria-hidden="true" />
               {action.label}

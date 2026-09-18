@@ -21,7 +21,7 @@ export default async function AdminDesaList() {
         <DesaSectionBanner
           crumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Desa" }]}
           title="Profil Desa"
-          subtitle="Kelola nama julukan, deskripsi, statistik, dan foto Desa Kawasi & Desa Soligi yang tampil di halaman Profil."
+          subtitle="Kelola deskripsi, statistik, dan foto Desa Kawasi & Desa Soligi yang tampil di halaman Profil."
           badgeLabel="Desa"
           badgeIcon={Compass}
         />

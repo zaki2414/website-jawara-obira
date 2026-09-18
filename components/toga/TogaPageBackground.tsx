@@ -1,9 +1,11 @@
-import { RotatingHiasanBackground } from "@/components/shared/RotatingHiasanBackground";
+import { PageOrnament, PaperTexture } from "@/components/shared/PageOrnament";
 
-/**
- * Identitas ornamen halaman toga — Hiasan 3.svg (dibedakan dari
- * Hiasan 1/2/4/5.svg milik profil/fauna-obi/budaya/umkm).
- */
+/** Identitas ornamen halaman TOGA — motif 3, menggantung di tepi kanan bawah. */
 export function TogaPageBackground() {
-  return <RotatingHiasanBackground hiasan={3} density="elegant" />;
+  return (
+    <>
+      <PaperTexture opacity={0.045} />
+      <PageOrnament motif={3} placement="top-right" size="xl" opacity={0.06} marks={3} counterMotif={1} />
+    </>
+  );
 }

@@ -45,7 +45,7 @@ export function UMKMCard({ item, index, large = false }: UMKMCardProps) {
     >
       <div>
         <h3
-          className={`font-serif font-black text-on-surface group-hover:text-primary transition-colors leading-tight mb-2 line-clamp-2 ${
+          className={`font-serif font-black text-on-surface ${styles.hoverText} transition-colors leading-tight mb-2 line-clamp-2 ${
             large ? "text-2xl md:text-3xl" : "text-2xl min-h-14"
           }`}
         >
@@ -58,7 +58,7 @@ export function UMKMCard({ item, index, large = false }: UMKMCardProps) {
 
       <div className="space-y-3 pt-3 border-t border-dashed border-outline-variant mt-auto shrink-0">
         {item.location_text && (
-          <p className="text-label-sm normal-case tracking-normal font-semibold text-on-surface-variant flex items-center gap-2 group-hover:text-primary transition-colors">
+          <p className={`text-label-sm normal-case tracking-normal font-semibold text-on-surface-variant flex items-center gap-2 ${styles.hoverText} transition-colors`}>
             <MapPin className="w-4 h-4 text-primary shrink-0" />
             {item.location_text}
           </p>

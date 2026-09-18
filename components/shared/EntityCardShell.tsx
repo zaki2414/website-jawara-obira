@@ -60,12 +60,12 @@ export function EntityCardShell({
       <Link href={href} className="block h-full group">
         <motion.div
           className={`bg-background border-2 ${borderColorClass} rounded-2xl overflow-hidden hard-shadow hard-shadow-hover transition-all h-full relative flex flex-col ${large ? "md:flex-row" : ""}`}
-          whileHover={{ y: -8, scale: 1.01 }}
+          whileHover={shouldReduceMotion ? undefined : { y: -8, scale: 1.01 }}
           transition={{ type: "spring" as const, stiffness: 300, damping: 20 }}
         >
           {/* Cover Image */}
           <div
-            className={`relative bg-linear-to-br from-primary/10 to-tertiary/10 ${borderColorClass} overflow-hidden shrink-0 ${
+            className={`relative bg-surface-container-low ${borderColorClass} overflow-hidden shrink-0 ${
               large
                 ? "h-64 md:h-auto md:w-1/2 border-b-2 md:border-b-0 md:border-r-2"
                 : "h-56 border-b-2"
@@ -86,13 +86,29 @@ export function EntityCardShell({
                 />
               </motion.div>
             ) : (
-              <motion.div
-                className="flex items-center justify-center h-full"
-                animate={shouldReduceMotion ? {} : { rotate: [0, 360] }}
-                transition={{ duration: 20, repeat: shouldReduceMotion ? 0 : Infinity, ease: "linear" as const }}
-              >
-                <FallbackIcon className="w-16 h-16 text-on-surface/20" />
-              </motion.div>
+              /* PLAT ARSIP BELUM BERFOTO.
+                 Versi lama menaruh satu ikon abu 20% yang BERPUTAR TANPA HENTI
+                 di tengah kotak. Dua masalah: rotasi tak berujung dipakai untuk
+                 sesuatu yang bukan indikator loading (CLAUDE.md §3.5 melarangnya),
+                 dan ikon melayang tanpa konteks membaca seperti gambar gagal
+                 dimuat, bukan keputusan desain. Sekarang kotaknya jadi "plat"
+                 bernomor: raster titik cetak + cap ornamen + ikon domain di
+                 dalam bingkai putus-putus, sehingga entri tanpa foto tetap
+                 terbaca sebagai bagian dari katalog. */
+              <div className="relative flex items-center justify-center h-full" aria-hidden="true">
+                <div className="absolute inset-0 bg-[radial-gradient(rgba(29,28,24,0.85)_1.5px,transparent_1.5px)] bg-size-[18px_18px] opacity-[0.07]" />
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.09]">
+                  <div className="relative w-40 h-40">
+                    <Image src="/Hiasan 4.svg" alt="" fill className="object-contain" />
+                  </div>
+                </div>
+                <div className="relative flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-on-surface/25 px-5 py-4">
+                  <FallbackIcon className="w-8 h-8 text-on-surface/35" />
+                  <span className="text-label-sm font-black uppercase tracking-[0.14em] text-on-surface/35">
+                    Belum berfoto
+                  </span>
+                </div>
+              </div>
             )}
 
             <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -113,9 +129,12 @@ export function EntityCardShell({
             {children}
           </div>
 
-          {/* Hover accent line */}
+          {/* Garis aksen hover — memakai warna aksen kartunya sendiri, bukan
+              gradien primary→tertiary tetap. Kartu di halaman TOGA (hijau)
+              atau Budaya (emas) sebelumnya selalu menumbuhkan garis biru-emas
+              yang tidak ada hubungannya dengan halamannya. */}
           <motion.div
-            className="absolute bottom-0 left-0 h-1 bg-linear-to-r from-primary via-tertiary to-transparent z-10"
+            className={`absolute bottom-0 left-0 h-1 z-10 ${accentBar ?? "bg-on-surface"}`}
             initial={{ width: 0 }}
             whileHover={{ width: "100%" }}
             transition={{ duration: 0.4 }}

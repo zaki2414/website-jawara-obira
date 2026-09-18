@@ -1,81 +1,48 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { PageFilterBar } from "@/components/shared/PageFilterBar";
 import {
-  BUDAYA_CATEGORIES,
   BUDAYA_CONTENT,
   getCategoryAccent,
   CATEGORY_ACCENT_STYLES,
 } from "@/constants/budaya";
 
 type CategoryFilterBarProps = {
+  /** Daftar kategori yang benar-benar bisa dipilih — gabungan taksonomi resmi
+   *  dan kategori yang muncul di database. Dioper dari pemanggil supaya
+   *  kategori yang hanya ada di data ("CSR", "Pengetahuan Tradisional") tidak
+   *  jadi entri yang mustahil ditemukan. */
+  categories: string[];
   activeCategory: string;
   onCategoryChange: (cat: string) => void;
   categoryCounts: Record<string, number>;
 };
 
 export function CategoryFilterBar({
+  categories,
   activeCategory,
   onCategoryChange,
   categoryCounts,
 }: CategoryFilterBarProps) {
   return (
-    <div className="flex items-center gap-3 overflow-x-auto pt-2 pb-3 scrollbar-none mask-image-horizontal">
-      {/* Label Badge */}
-      <div className="flex items-center gap-1.5 bg-background border-2 border-on-surface p-1.5 rounded-xl shrink-0 hard-shadow-sm mr-1">
-        <Filter className="w-3.5 h-3.5 text-primary ml-1" />
-        <span className="text-label-sm font-black uppercase tracking-wider text-on-surface-variant pr-1">
-          {BUDAYA_CONTENT.filterLabel}
-        </span>
-      </div>
-
-      {/* Category Buttons */}
-      <div className="flex gap-2 py-1 px-0.5">
-        {BUDAYA_CATEGORIES.map((cat) => {
-          const isActive = activeCategory === cat;
-          const accent = getCategoryAccent(cat === "Semua" ? undefined : cat);
-          const styles = CATEGORY_ACCENT_STYLES[accent];
-          const count = categoryCounts[cat] ?? 0;
-
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => onCategoryChange(cat)}
-              aria-pressed={isActive}
-              className={[
-                "min-h-11 inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-label-sm font-black uppercase tracking-wider",
-                "transition-all duration-200 cursor-pointer select-none shrink-0",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                styles.ring,
-                isActive
-                  ? `${styles.badge} border-on-surface -translate-y-0.5 hard-shadow-sm`
-                  : "bg-background text-on-surface border-on-surface/40 hover:border-on-surface hover:-translate-y-px",
-              ].join(" ")}
-            >
-              {cat !== "Semua" && (
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "bg-current" : styles.dot}`}
-                  aria-hidden="true"
-                />
-              )}
-              {cat}
-              {count > 0 && (
-                <span
-                  className={[
-                    "text-label-sm leading-none px-1.5 py-0.5 rounded-full font-black",
-                    isActive
-                      ? "bg-background/25 text-current"
-                      : "bg-surface-container text-on-surface-variant",
-                  ].join(" ")}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <PageFilterBar
+      accent="budaya"
+      chips={{
+        label: BUDAYA_CONTENT.filterLabel ?? "Saring kategori",
+        active: activeCategory,
+        onSelect: onCategoryChange,
+        items: categories.map((cat) => ({
+          value: cat,
+          label: cat,
+          count: categoryCounts[cat] ?? 0,
+          // Chip aktif memakai warna kategorinya sendiri, jadi warnanya
+          // berarti sesuatu — bukan satu warna sorot untuk semua.
+          activeClass:
+            CATEGORY_ACCENT_STYLES[
+              cat === "Semua" ? "primary" : getCategoryAccent(cat)
+            ].badge,
+        })),
+      }}
+    />
   );
 }

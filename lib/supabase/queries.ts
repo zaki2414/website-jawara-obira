@@ -3,6 +3,7 @@ import path from "path";
 import type { FeatureCollection } from "geojson";
 import { createClient } from "./server";
 import { findBangunanContaining } from "@/lib/geo";
+import type { TogaRecipe } from "@/constants/toga";
 
 // ================= TYPES & INTERFACES =================
 
@@ -42,7 +43,7 @@ export interface TogaPlantPayload {
   description?: string;
   health_benefits?: string[];
   thumbnail_url?: string | null;
-  recipes?: any[];
+  recipes?: TogaRecipe[];
 }
 
 export interface FaunaPayload {
@@ -61,6 +62,7 @@ export interface FaunaPayload {
   description?: string;
   physical_characteristics?: string;
   thumbnail_url?: string | null;
+  image_source?: string | null;
   documentations?: { url: string; caption: string }[] | null;
 }
 
@@ -95,17 +97,6 @@ export interface UMKMProductPayload {
   item_name: string;
 }
 
-export interface NewsPayload {
-  title: string;
-  slug: string;
-  content: string;
-  thumbnail_url?: string | null;
-  author_name?: string;
-  village_id: string | null;
-  extra_images?: { url: string; caption: string }[];
-  published_at?: string;
-}
-
 export interface CulturePayload {
   title: string;
   slug: string;
@@ -131,12 +122,15 @@ interface GroupedJournal {
 
 // ================= VILLAGE QUERIES =================
 
+// title/long_description/highlight SENGAJA tidak ada di sini — kolom itu
+// dulu ada di tipe ini dan di form admin, tapi tidak pernah benar-benar
+// dibuat di tabel `villages`. Setiap update selalu gagal (Postgrest menolak
+// SELURUH request kalau satu saja kolom di payload tidak dikenal — PGRST204),
+// termasuk saat admin cuma ingin ganti thumbnail. Payload sekarang dibatasi
+// persis ke kolom yang benar-benar ada.
 export interface VillagePayload {
   name: string;
-  title?: string | null;
   description?: string | null;
-  long_description?: string | null;
-  highlight?: string | null;
   thumbnail_url?: string | null;
 }
 
@@ -184,117 +178,6 @@ export async function getVillageById(id: string) {
 // dan fs/promises, tidak bisa di-bundle ke browser). VillageForm.tsx
 // menyimpan dua UPDATE (villages + village_statistics) sendiri di sana.
 
-// ================= NEWS (BERITA) QUERIES =================
-
-export async function getAllNews() {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("news")
-      .select(
-        "id, title, slug, thumbnail_url, author_name, published_at, villages(name, slug)",
-      )
-      .order("published_at", { ascending: false });
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-export async function getNewsByVillageSlug(desaSlug: string) {
-  try {
-    const supabase = await createClient();
-    const { data: village } = await supabase
-      .from("villages")
-      .select("id")
-      .eq("slug", desaSlug)
-      .single();
-    if (!village)
-      return { data: [], error: { message: "Desa tidak ditemukan" } };
-
-    const { data, error } = await supabase
-      .from("news")
-      .select("id, title, slug, thumbnail_url, author_name, published_at")
-      .eq("village_id", village.id)
-      .order("published_at", { ascending: false });
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-export async function getNewsDetail(slug: string) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("news")
-      .select("*, villages(name, slug)")
-      .eq("slug", slug)
-      .single();
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-// Dipakai admin (app/admin/berita/[id]/page.tsx) untuk mengisi form edit —
-// sebelumnya page.tsx memanggil createClient() + query manual langsung,
-// melanggar aturan "semua query Server Component lewat lib/supabase/queries.ts"
-// (pola sama dengan getCultureById/getUMKMById).
-export async function getNewsById(id: string) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("news")
-      .select("*, villages(slug)")
-      .eq("id", id)
-      .single();
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-// ✅ BARU: CRUD News
-export async function createNews(payload: NewsPayload) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("news")
-      .insert(payload)
-      .select()
-      .single();
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-export async function updateNews(id: string, payload: Partial<NewsPayload>) {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("news")
-      .update(payload)
-      .eq("id", id)
-      .select()
-      .single();
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-}
-
-export async function deleteNews(id: string) {
-  try {
-    const supabase = await createClient();
-    const { error } = await supabase.from("news").delete().eq("id", id);
-    return { error };
-  } catch (err) {
-    return { error: err };
-  }
-}
-
 // ================= CULTURE (BUDAYA) QUERIES =================
 
 export async function getAllCulture() {
@@ -302,8 +185,18 @@ export async function getAllCulture() {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("culture_articles")
+      // `content` ikut diambil supaya katalog bisa menampilkan CUPLIKAN isi
+      // (lihat excerptFromHtml di lib/utils.ts). Sebelumnya listing hanya
+      // punya judul + kategori, jadi satu-satunya cara pembaca tahu sebuah
+      // artikel tentang apa adalah membukanya.
+      //
+      // Trade-off yang disadari: ini menarik seluruh HTML artikel untuk
+      // halaman daftar. Aman selama arsipnya berjumlah puluhan dan halaman
+      // ini ter-cache (revalidate 3600). Kalau nanti artikelnya sudah ratusan,
+      // pindahkan ke kolom `excerpt` terpisah di tabel — jangan biarkan
+      // select ini tumbuh diam-diam.
       .select(
-        "id, title, slug, thumbnail_url, category, published_at, villages(name)",
+        "id, title, slug, thumbnail_url, category, published_at, content, villages(name)",
       )
       .order("published_at", { ascending: false });
     return { data, error };
@@ -399,8 +292,13 @@ export async function getAllUMKM(search?: string, businessType?: string) {
       .select("*, villages(name), umkm_features(feature)")
       .order("name");
     if (search) query = query.ilike("name", `%${search}%`);
+    // ilike, BUKAN eq: nilai business_type di database ditulis admin dengan
+    // kapitalisasi bebas ("Produk", "Jasa", "Kuliner") sementara nilai filter
+    // yang dikirim UI berbentuk slug huruf kecil. Dengan eq(), 16 dari 17
+    // usaha tidak pernah bisa disaring sama sekali. ilike tanpa wildcard =
+    // perbandingan penuh yang mengabaikan besar-kecil huruf.
     if (businessType && businessType !== "all")
-      query = query.eq("business_type", businessType);
+      query = query.ilike("business_type", businessType);
     const { data, error } = await query;
     return { data, error };
   } catch (err) {
@@ -416,9 +314,14 @@ export async function getUMKMBusinessTypeCounts() {
     const { data, error } = await supabase.from("umkm").select("business_type");
     if (error || !data) return { data: null, error };
 
+    // Kunci dinormalkan ke huruf kecil supaya "Jasa" dan "jasa" tidak terhitung
+    // sebagai dua jenis usaha berbeda — lihat normalizeBusinessType di
+    // constants/umkm.ts soal kenapa nilai di database tidak seragam.
     const counts: Record<string, number> = {};
     for (const row of data) {
-      counts[row.business_type] = (counts[row.business_type] ?? 0) + 1;
+      const key = String(row.business_type ?? "").trim().toLowerCase();
+      if (!key) continue;
+      counts[key] = (counts[key] ?? 0) + 1;
     }
     return { data: counts, error: null };
   } catch (err) {
@@ -490,10 +393,10 @@ export async function getUMKMBySlug(slug: string) {
         ...umkm,
         blok,
         gallery: gallery.data || [],
-        features: features.data?.map((f: any) => f.feature) || [],
-        categories: categories.data?.map((c: any) => c.cat) || [],
+        features: features.data?.map((f) => f.feature) || [],
+        categories: categories.data?.map((c) => c.cat) || [],
         products:
-          products.data?.map((p: any) => ({
+          products.data?.map((p) => ({
             item_name: p.item_name,
             category: p.c,
           })) || [],
@@ -1334,15 +1237,13 @@ export async function deleteFauna(id: string) {
 export async function getAdminDashboardStats() {
   try {
     const supabase = await createClient();
-    const [news, culture, gallery, umkm] = await Promise.all([
-      supabase.from("news").select("id", { count: "exact", head: true }),
+    const [culture, gallery, umkm] = await Promise.all([
       supabase.from("culture_articles").select("id", { count: "exact", head: true }),
       supabase.from("galleries").select("id", { count: "exact", head: true }),
       supabase.from("umkm").select("id", { count: "exact", head: true }),
     ]);
     return {
       data: {
-        news: news.count ?? 0,
         culture: culture.count ?? 0,
         gallery: gallery.count ?? 0,
         umkm: umkm.count ?? 0,
@@ -1355,6 +1256,55 @@ export async function getAdminDashboardStats() {
 }
 
 // Dipakai khusus app/admin/kkn/page.tsx untuk kartu statistik ringkas KKN hub.
+// Jurnal terbaru lintas bulan — dipakai landing page /kkn. Sengaja TERPISAH
+// dari getKKNJournalsByMonth: fungsi itu dibangun untuk tampilan kalender
+// (dikelompokkan per tanggal, dibatasi satu bulan), jadi memakainya di sini
+// akan menampilkan "kosong" setiap kali bulan berjalan kebetulan belum ada
+// entri — padahal yang diminta halaman ini adalah entri TERAKHIR, kapan pun
+// itu ditulis.
+export async function getLatestKKNJournals(limit = 3) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("kkn_journals")
+      .select("id, title, slug, cover_image, activity_date, villages(name)")
+      .order("activity_date", { ascending: false })
+      .limit(limit);
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+/**
+ * Sebaran jurnal per bulan sepanjang masa KKN.
+ *
+ * Hanya menarik kolom `activity_date` (bukan seluruh baris) karena yang
+ * dibutuhkan cuma tanggalnya untuk dihitung — payload-nya jadi sangat kecil
+ * meski entrinya nanti bertambah banyak.
+ */
+export async function getKKNJournalMonthCounts() {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("kkn_journals")
+      .select("activity_date")
+      .order("activity_date", { ascending: true });
+    if (error || !data) return { data: null, error };
+
+    const counts: Record<string, number> = {};
+    for (const row of data) {
+      const date = String(row.activity_date ?? "");
+      if (date.length < 7) continue;
+      const key = date.slice(0, 7); // "YYYY-MM"
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return { data: counts, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
 export async function getKKNHubStats() {
   try {
     const supabase = await createClient();
@@ -1414,20 +1364,93 @@ export async function getPublishedKKNJournalCount() {
 // "3 proker terbaru" (featuredProkers), tanpa perlu 2 round-trip terpisah
 // seperti hooks/useHomePageData.ts yang lama.
 export async function getFeaturedKKNProkers(limit = 3) {
+  const columns =
+    "id, title, slug, short_description, image_url, impact_metrics, documentation";
   try {
     const supabase = await createClient();
-    const { data, count, error } = await supabase
+
+    // `featured` dulu supaya proker yang dicentang admin (form
+    // /admin/kkn/proker) selalu naik ke beranda /kkn. created_at tetap jadi
+    // pengurut kedua untuk mengisi sisa kuota — 22 dari 23 baris punya
+    // created_at identik dari satu kali insert massal, jadi kalau
+    // mengandalkan itu saja urutannya ditentukan Postgres, bukan admin.
+    const withFeatured = await supabase
       .from("kkn_prokers")
-      .select("id, title, slug, short_description, image_url, impact_metrics, documentation", {
-        count: "exact",
-      })
+      .select(columns, { count: "exact" })
       .eq("published", true)
+      .order("featured", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(limit);
-    return { data, count: count ?? 0, error };
+
+    // 42703 = kolom tidak ada, artinya scripts/add-kkn-proker-featured.sql
+    // belum dijalankan di database ini. Jangan biarkan seksi Program Kerja di
+    // beranda /kkn ikut kosong gara-gara migrasi yang belum jalan: ulangi
+    // query tanpa pengurut `featured` (persis perilaku lama).
+    if (
+      withFeatured.error &&
+      (withFeatured.error as { code?: string }).code === "42703"
+    ) {
+      const { data, count, error } = await supabase
+        .from("kkn_prokers")
+        .select(columns, { count: "exact" })
+        .eq("published", true)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      return { data, count: count ?? 0, error };
+    }
+
+    return {
+      data: withFeatured.data,
+      count: withFeatured.count ?? 0,
+      error: withFeatured.error,
+    };
   } catch (err) {
     return { data: null, count: 0, error: err };
   }
+}
+
+// ================= SITEMAP =================
+// Ambil slug + tanggal untuk app/sitemap.ts. SENGAJA tidak memakai getAllX()
+// yang sudah ada: fungsi-fungsi itu menarik kolom berat (HTML artikel penuh,
+// galeri, relasi) yang tidak dipakai sitemap sama sekali. Di sini cukup dua
+// kolom per baris.
+export type SitemapEntry = { slug: string; lastModified: string | null };
+
+async function slugRows(
+  table: string,
+  dateColumn: "updated_at" | "created_at",
+  publishedOnly: boolean,
+): Promise<SitemapEntry[]> {
+  try {
+    const supabase = await createClient();
+    let query = supabase.from(table).select(`slug, ${dateColumn}`);
+    if (publishedOnly) query = query.eq("published", true);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return (data as Record<string, unknown>[])
+      .filter((row): row is Record<string, unknown> => typeof row.slug === "string" && !!row.slug)
+      .map((row) => ({
+        slug: row.slug as string,
+        lastModified: (row[dateColumn] as string | null) ?? null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getSitemapEntries() {
+  // Kolom tanggalnya berbeda-beda per tabel (sebagian tidak punya updated_at),
+  // dan hanya kkn_* yang punya konsep published — dicek langsung ke skema,
+  // bukan diasumsikan seragam.
+  const [budaya, umkm, toga, fauna, proker, jurnal] = await Promise.all([
+    slugRows("culture_articles", "created_at", false),
+    slugRows("umkm", "created_at", false),
+    slugRows("toga_plants", "updated_at", false),
+    slugRows("fauna_obi", "updated_at", false),
+    slugRows("kkn_prokers", "updated_at", true),
+    slugRows("kkn_journals", "created_at", true),
+  ]);
+  return { budaya, umkm, toga, fauna, proker, jurnal };
 }
 
 // ================= GALLERY QUERIES =================

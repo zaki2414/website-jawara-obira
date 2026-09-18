@@ -27,7 +27,7 @@ export function AdminCultureCard({ item, index = 0 }: AdminCultureCardProps) {
 
   return (
     <div
-      className={`group flex flex-col overflow-hidden rounded-2xl border-4 bg-background hard-shadow-lg transition-all duration-200 hover:-translate-y-1.5 hover:hard-shadow-lg ${accentBorder}`}
+      className={`group flex flex-col overflow-hidden rounded-2xl border-4 bg-background hard-shadow-lg hard-shadow-hover ${accentBorder}`}
     >
       <div className="relative h-48 shrink-0 border-b-2 border-on-surface bg-surface-container-high">
         {item.thumbnail_url ? (
@@ -70,7 +70,7 @@ export function AdminCultureCard({ item, index = 0 }: AdminCultureCardProps) {
         <div className="mt-auto flex flex-wrap gap-2 pt-4">
           <div className="grid flex-1">
             <Button asChild variant="ghost" size="sm">
-              <Link href={`/admin/budaya/${item.id}`}>
+              <Link prefetch={false} href={`/admin/budaya/${item.id}`}>
                 <Pencil className="size-3.5" aria-hidden="true" />
                 Edit
               </Link>

@@ -1,12 +1,7 @@
 "use client";
 
-import { EntitySearchForm } from "@/components/shared/EntitySearchForm";
-import {
-  umkmFormVariants,
-  UMKM_BUSINESS_TYPES,
-  UMKM_CONTENT,
-  UMKM_ICONS,
-} from "@/constants/umkm";
+import { PageFilterBar } from "@/components/shared/PageFilterBar";
+import { UMKM_BUSINESS_TYPES, UMKM_CONTENT } from "@/constants/umkm";
 
 type UMKMSearchFormProps = {
   initialQ?: string;
@@ -15,16 +10,20 @@ type UMKMSearchFormProps = {
 
 export function UMKMSearchForm({ initialQ, initialType }: UMKMSearchFormProps) {
   return (
-    <EntitySearchForm
-      variants={umkmFormVariants}
-      initialQ={initialQ}
-      initialFilter={initialType}
-      filterName="type"
-      filterOptions={UMKM_BUSINESS_TYPES}
-      searchPlaceholder={UMKM_CONTENT.searchPlaceholder}
-      filterLabel={UMKM_CONTENT.filterLabel}
-      SearchIcon={UMKM_ICONS.Search}
-      FilterIcon={UMKM_ICONS.Filter}
+    <PageFilterBar
+      accent="umkm"
+      search={{
+        name: "q",
+        placeholder: UMKM_CONTENT.searchPlaceholder,
+        defaultValue: initialQ,
+      }}
+      select={{
+        name: "type",
+        label: "Jenis usaha",
+        options: UMKM_BUSINESS_TYPES.map((t) => ({ value: t.value, label: t.label })),
+        defaultValue: initialType,
+      }}
+      submitLabel={UMKM_CONTENT.filterLabel}
     />
   );
 }

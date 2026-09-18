@@ -13,10 +13,15 @@ export function PotensiBento() {
   return (
     <section className="bg-natural-paper py-24 md:py-32 border-on-surface relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {/* Glow ambience — motion-safe supaya denyutnya berhenti total saat
-            user minta reduced motion (animate-[pulse] tidak otomatis patuh). */}
-        <div className="absolute -top-10 left-1/4 w-96 h-96 bg-primary rounded-full blur-3xl opacity-15 transform-gpu motion-safe:animate-[pulse_6s_infinite]" />
-        <div className="absolute bottom-10 right-1/4 w-125 h-125 bg-tertiary rounded-full blur-3xl opacity-15 transform-gpu motion-safe:animate-[pulse_8s_infinite_1s]" />
+        {/* Dua "glow ambience" (orb gradien blur primary/tertiary) dihapus:
+            di kertas hangat #fef9f2 keduanya membaca sebagai bercak biru dan
+            kuning buram — persis dekorasi generik yang CLAUDE.md §3.4 sendiri
+            larang untuk identitas archive ini. Diganti raster titik cetak,
+            yang justru punya asal-usul pada benda cetak. */}
+        <div
+          className="absolute inset-0 bg-[radial-gradient(rgba(29,28,24,0.85)_1.5px,transparent_1.5px)] bg-size-[22px_22px] opacity-[0.05]"
+          aria-hidden="true"
+        />
         <RotatingHiasanBackground hiasan={1} density="elegant" />
       </div>
 
@@ -44,8 +49,11 @@ export function PotensiBento() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {POTENSI_DESA.map((item, index) => {
-            // Bento: kartu 1, 4, dan 5 melebar 2 kolom.
-            const isWide = index === 0 || index === 3 || index === 4;
+            // Bento: hanya kartu 1 yang melebar 2 kolom. Dengan 5 item di grid
+            // 3 kolom, satu kartu lebar = 6 sel = tepat 2 baris penuh tanpa
+            // lubang. (Dulu 6 item dengan 3 kartu lebar = 9 sel/3 baris; sejak
+            // entri Berita dihapus, pola lama menyisakan satu sel kosong.)
+            const isWide = index === 0;
 
             return (
               <Link

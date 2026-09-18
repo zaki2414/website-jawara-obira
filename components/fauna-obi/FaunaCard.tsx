@@ -4,7 +4,7 @@ import { EntityCardShell } from "@/components/shared/EntityCardShell";
 import { MapPin } from "lucide-react";
 import {
   faunaCardVariants,
-  getIucnBrutalistClass,
+  getIucnBrutalistClass, getIucnLabel,
   getFaunaAccent,
   FAUNA_ACCENT_STYLES,
   FAUNA_ICONS,
@@ -37,7 +37,9 @@ export function FaunaCard({ item, index, large = false }: FaunaCardProps) {
           <span
             className={`absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full border-2 border-on-surface text-label-sm font-black uppercase tracking-widest hard-shadow-sm ${getIucnBrutalistClass(item.iucn_status)}`}
           >
-            {item.iucn_status}
+            {/* Label ringkas (kode + arti), bukan teks mentah database
+                "Least Concern (LC)" yang meluber dari badge kecil. */}
+            {getIucnLabel(item.iucn_status)}
           </span>
         ) : undefined
       }
@@ -51,7 +53,7 @@ export function FaunaCard({ item, index, large = false }: FaunaCardProps) {
           </span>
         )}
         <h3
-          className={`font-serif font-black text-on-surface group-hover:text-primary transition-colors leading-tight mb-1 line-clamp-2 ${
+          className={`font-serif font-black text-on-surface ${styles.hoverText} transition-colors leading-tight mb-1 line-clamp-2 ${
             large ? "text-2xl md:text-3xl" : "text-2xl min-h-14"
           }`}
         >

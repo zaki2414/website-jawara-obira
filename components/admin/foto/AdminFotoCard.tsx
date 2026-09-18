@@ -19,7 +19,7 @@ export function AdminFotoCard({ photo, index = 0 }: AdminFotoCardProps) {
 
   return (
     <div
-      className={`group flex flex-col overflow-hidden rounded-2xl border-4 bg-background hard-shadow-lg transition-all duration-200 hover:-translate-y-1.5 hover:hard-shadow-lg ${accentBorder}`}
+      className={`group flex flex-col overflow-hidden rounded-2xl border-4 bg-background hard-shadow-lg hard-shadow-hover ${accentBorder}`}
     >
       <div className="relative h-48 shrink-0 border-b-2 border-on-surface bg-surface-container-high">
         <Image

@@ -1,26 +1,24 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ArrowRight, Users, NotebookPen, Rocket } from "lucide-react";
-import { scaleIn } from "@/lib/animations";
 import type { KKNHubIconKey, KKNHubMenuItem, KKNHubTone } from "@/constants/kknAdmin";
 
-// Resolve string key -> komponen ikon DI DALAM client component ini (bukan
-// diterima lewat props) — lihat catatan KKNHubIconKey di constants/kknAdmin.ts.
+// Resolve string key -> komponen ikon di sini, bukan diterima lewat props —
+// lihat catatan KKNHubIconKey di constants/kknAdmin.ts.
 const ICONS: Record<KKNHubIconKey, typeof Users> = {
   users: Users,
   "notebook-pen": NotebookPen,
   rocket: Rocket,
 };
 
-// 3 shade kuning/emas yang benar-benar berbeda nilainya (bukan rotasi
-// primary/tertiary/cream seperti dashboard utama, tapi tetap satu keluarga
-// warna — lihat komentar KKNHubTone di constants/kknAdmin.ts), konsisten
-// dengan kotak menu "KKN Hub" yang sekarang tertiary. Dulu keluarga biru,
-// diganti tertiary — pasangan on-tertiary/tertiary-container sebagai
-// "gelap"/"terang" dipakai sesuai kontras yang sudah tervalidasi WCAG di
-// budayaCardStyles.ts (tertiary-container+on-tertiary ≈ 8.6:1, simetris).
+// 3 nilai terang-gelap dalam satu keluarga emas, konsisten dengan kotak menu
+// "KKN Hub" yang tertiary di dashboard utama.
+//
+// `dark` dulu memakai bg-on-tertiary. Itu token TEKS (warna tulisan di atas
+// emas), dipakai sebagai permukaan — hasilnya kotak cokelat-zaitun yang tidak
+// ada di palet manapun dan terbaca seperti kartu rusak di antara dua kartu
+// emas. Sekarang memakai bg-on-surface: permukaan gelap yang memang sudah
+// jadi bagian sistem (halaman publik /galeri memakai bidang yang sama dengan
+// aksen tertiary), jadi kontrasnya tinggi dan warnanya masih satu cerita.
 const TONE_STYLES: Record<
   KKNHubTone,
   { bg: string; text: string; subtext: string; iconChip: string }
@@ -32,10 +30,10 @@ const TONE_STYLES: Record<
     iconChip: "bg-tertiary-container text-on-tertiary",
   },
   dark: {
-    bg: "bg-on-tertiary",
-    text: "text-tertiary-container",
-    subtext: "text-tertiary-container/75",
-    iconChip: "bg-tertiary-container text-on-tertiary",
+    bg: "bg-on-surface",
+    text: "text-background",
+    subtext: "text-background/75",
+    iconChip: "bg-tertiary text-on-tertiary",
   },
   light: {
     bg: "bg-tertiary-container",
@@ -45,57 +43,49 @@ const TONE_STYLES: Record<
   },
 };
 
+// Tiga tile setara, bukan bento 2x2 + dua 1x1. Dengan hanya tiga menu, tile
+// "feature" yang dipaksa setinggi dua baris menyisakan lubang kosong besar di
+// tengahnya, dan dua tile kecil di sebelahnya menyembunyikan deskripsinya
+// supaya muat — dua kompromi untuk susunan yang tidak memberi apa-apa. Tiga
+// kartu sama besar lebih cepat dipindai dan semua deskripsinya terbaca.
 export function KKNMenuCard({ item }: { item: KKNHubMenuItem }) {
   const Icon = ICONS[item.icon];
   const tone = TONE_STYLES[item.tone];
-  const isFeature = item.size === "feature";
 
   return (
-    <motion.div
-      variants={scaleIn}
-      className={
-        isFeature
-          ? "h-full md:col-span-2 md:row-span-2"
-          : "h-full md:col-span-1 md:row-span-1"
-      }
+    <Link
+      prefetch={false}
+      href={item.href}
+      className={`group relative flex h-full min-h-56 flex-col overflow-hidden rounded-2xl border-2 border-on-surface p-6 hard-shadow hard-shadow-hover press-effect focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background ${tone.bg}`}
     >
-      <Link
-        href={item.href}
-        className={`group relative flex h-full min-h-56 flex-col overflow-hidden rounded-2xl border-2 border-on-surface p-6 hard-shadow transition-all duration-200 hover:-translate-x-1 hover:-translate-y-1 hover:hard-shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary-container focus-visible:ring-offset-2 focus-visible:ring-offset-background ${tone.bg} ${isFeature ? "" : "md:min-h-0"}`}
+      <Icon
+        className={`pointer-events-none absolute -bottom-6 -right-6 size-28 opacity-20 ${tone.text}`}
+        aria-hidden="true"
+      />
+
+      <span
+        className={`relative inline-flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-on-surface ${tone.iconChip}`}
       >
-        <Icon
-          className={`pointer-events-none absolute -bottom-6 -right-6 opacity-20 ${tone.text} ${isFeature ? "size-36" : "size-24"}`}
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+
+      <h3 className={`relative mt-5 font-serif text-lg font-black tracking-tight ${tone.text}`}>
+        {item.title}
+      </h3>
+
+      <p className={`relative mt-2 text-sm font-medium leading-relaxed ${tone.subtext}`}>
+        {item.description}
+      </p>
+
+      <span
+        className={`relative mt-auto inline-flex w-fit items-center gap-1.5 pt-6 text-label-sm font-black uppercase tracking-wide ${tone.text}`}
+      >
+        {item.action}
+        <ArrowRight
+          className="size-4 transition-transform duration-150 ease-[--ease-out] group-hover:translate-x-1"
           aria-hidden="true"
         />
-
-        <span
-          className={`relative inline-flex shrink-0 items-center justify-center rounded-xl border-2 border-on-surface ${tone.iconChip} ${isFeature ? "size-14" : "size-11"}`}
-        >
-          <Icon className={isFeature ? "size-6" : "size-5"} aria-hidden="true" />
-        </span>
-
-        <h3
-          className={`relative mt-5 font-serif font-black tracking-tight ${tone.text} ${isFeature ? "text-2xl" : "text-lg"}`}
-        >
-          {item.title}
-        </h3>
-
-        {isFeature && (
-          <p className={`relative mt-2 text-sm font-medium leading-relaxed ${tone.subtext}`}>
-            {item.description}
-          </p>
-        )}
-
-        <span
-          className={`relative mt-auto inline-flex w-fit items-center gap-1.5 pt-6 font-black uppercase tracking-wide ${tone.text} ${isFeature ? "text-label-md" : "text-label-sm"}`}
-        >
-          {item.action}
-          <ArrowRight
-            className="size-4 transition-transform group-hover:translate-x-1"
-            aria-hidden="true"
-          />
-        </span>
-      </Link>
-    </motion.div>
+      </span>
+    </Link>
   );
 }

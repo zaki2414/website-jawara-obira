@@ -1,12 +1,7 @@
 "use client";
 
-import { EntitySearchForm } from "@/components/shared/EntitySearchForm";
-import {
-  faunaFormVariants,
-  FAUNA_CLASSES,
-  FAUNA_CONTENT,
-  FAUNA_ICONS,
-} from "@/constants/fauna";
+import { PageFilterBar } from "@/components/shared/PageFilterBar";
+import { FAUNA_CLASSES, FAUNA_CONTENT } from "@/constants/fauna";
 
 type FaunaFilterBarProps = {
   initialQ?: string;
@@ -15,16 +10,22 @@ type FaunaFilterBarProps = {
 
 export function FaunaFilterBar({ initialQ, initialClass }: FaunaFilterBarProps) {
   return (
-    <EntitySearchForm
-      variants={faunaFormVariants}
-      initialQ={initialQ}
-      initialFilter={initialClass}
-      filterName="class"
-      filterOptions={FAUNA_CLASSES}
-      searchPlaceholder={FAUNA_CONTENT.searchPlaceholder}
-      filterLabel={FAUNA_CONTENT.filterLabel}
-      SearchIcon={FAUNA_ICONS.Search}
-      FilterIcon={FAUNA_ICONS.Filter}
+    <PageFilterBar
+      accent="fauna"
+      search={{
+        name: "q",
+        placeholder: FAUNA_CONTENT.searchPlaceholder,
+        defaultValue: initialQ,
+      }}
+      select={{
+        name: "class",
+        label: "Kelas satwa",
+        // Label saja, tanpa emoji: emoji dirender berbeda-beda per sistem
+        // operasi dan tidak bisa diikat ke palet.
+        options: FAUNA_CLASSES.map((c) => ({ value: c.value, label: c.label })),
+        defaultValue: initialClass,
+      }}
+      submitLabel={FAUNA_CONTENT.filterLabel}
     />
   );
 }

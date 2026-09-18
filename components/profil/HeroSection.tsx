@@ -1,17 +1,14 @@
 "use client";
 
 import { useInView } from "react-intersection-observer";
-import { motion, useScroll, useTransform } from "framer-motion";
-import Image from "next/image";
+import { motion } from "framer-motion";
 import { Landmark } from "lucide-react";
 import { AtlasBackground } from "./AtlasBackground";
+import { CompassRose } from "./CompassRose";
 import { titleVariants } from "@/constants/profil";
 
 export function HeroSection() {
   const [ref, inView] = useInView({ threshold: 0.3, triggerOnce: true });
-
-  const { scrollY } = useScroll();
-  const rotateCompass = useTransform(scrollY, [0, 1000], [0, 360]);
 
   return (
     <section
@@ -19,48 +16,10 @@ export function HeroSection() {
       className="relative bg-primary border-b-4 border-on-surface min-h-[50vh] flex items-center overflow-hidden"
     >
       <AtlasBackground />
+      {/* Kompas: cincin & mata angin diam, ornamennya berputar saat digulir. */}
+      <CompassRose />
 
       <div className="relative max-w-7xl mx-auto px-6 py-24 z-10 w-full">
-        {/* ========================= */}
-        {/* COMPASS ROSE PARALLAX */}
-        {/* ========================= */}
-        <motion.div
-          style={{ rotate: rotateCompass }}
-          className="absolute rotate-20 -bottom-10 -right-10 sm:right-12 md:right-24 sm:top-1/2 sm:-translate-y-1/2 w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 border-4 border-dashed border-on-primary/20 rounded-full flex items-center justify-center pointer-events-none select-none z-0"
-          aria-hidden="true"
-        >
-          {/* Hiasan 4.svg sebagai kompas dengan transparansi halus */}
-          <div className="relative w-30% h-30% opacity-30 p-6 sm:p-8">
-            <Image
-              src="/Hiasan 4.svg"
-              alt=""
-              fill
-              className="object-contain"
-            />
-          </div>
-
-          {/* Huruf N (Utara) - Di luar lingkaran atas */}
-          <div className="absolute -top-3 font-sans font-black text-sm sm:text-base text-on-primary/40 tracking-widest">
-            N
-          </div>
-
-          {/* Huruf S (Selatan) - Di luar lingkaran bawah */}
-          <div className="absolute -bottom-3 font-sans font-black text-sm sm:text-base text-on-primary/40 tracking-widest">
-            S
-          </div>
-
-          {/* Huruf E (Timur) - Di luar lingkaran kanan */}
-          <div className="absolute -right-3 font-sans font-black text-sm sm:text-base text-on-primary/40 tracking-widest">
-            E
-          </div>
-
-          {/* Huruf W (Barat) - Di luar lingkaran kiri */}
-          <div className="absolute -left-3 font-sans font-black text-sm sm:text-base text-on-primary/40 tracking-widest">
-            W
-          </div>
-        </motion.div>
-        {/* ========================= */}
-
         {/* Badge + Title + Description Container */}
         <div className="space-y-6 mb-12 relative z-10">
           {/* Badge Kadaster Digital */}
@@ -106,7 +65,12 @@ export function HeroSection() {
           variants={titleVariants}
           initial="hidden"
           animate={inView ? "visible" : "hidden"}
-          className="relative z-10 text-on-primary/90 max-w-2xl text-lg md:text-xl font-medium leading-relaxed mb-12 border-l-4 border-tertiary/50 pl-6"
+          /* Batang aksen tebal di sisi kiri paragraf ini sudah dihapus: itu
+             pola callout generik yang tidak dipakai di bagian lain situs ini,
+             dan di sini ia menandai paragraf biasa — bukan kutipan atau
+             peringatan — sehingga menjanjikan penekanan yang tidak ada isinya.
+             Hierarki paragraf ini sudah cukup dibawa ukuran & warnanya. */
+          className="relative z-10 text-on-primary/90 max-w-[58ch] text-lg md:text-xl font-medium leading-relaxed mb-12"
         >
           Eksplorasi Spasial Pulau Obi Biodiversitas, Budaya, & Bentang Alam Maluku Utara. Menghubungkan ekosistem hutan tropis Desa Soligi dan kawasan pesisir Desa Kawasi secara visual.
         </motion.p>

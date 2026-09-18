@@ -4,3 +4,5 @@ export { FaunaFilterBar } from "./FaunaFilterBar";
 export { FaunaCard } from "./FaunaCard";
 export { FaunaGrid } from "./FaunaGrid";
 export { FaunaEmptyState } from "./FaunaEmptyState";
+export { FaunaChecklistRow } from "./FaunaChecklistRow";
+export { FaunaClassRail } from "./FaunaClassRail";

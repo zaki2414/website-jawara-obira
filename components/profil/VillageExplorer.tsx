@@ -31,7 +31,7 @@ export function VillageExplorer({ facilities, buildingOverrides, umkmPins, villa
     // yang motong halaman jadi dua blok. Sekarang satu background menerus
     // (gradasi tertiary yang sama + satu RotatingHiasanBackground) supaya
     // peta pemilihan desa dan peta kadaster terasa satu section yang sama.
-    <section className="relative overflow-hidden bg-linear-to-b from-tertiary-container/20 via-background to-background py-16 md:py-24 px-6 border-b-4 border-on-surface">
+    <section className="relative overflow-hidden bg-natural-paper py-16 md:py-24 px-6 border-b-4 border-on-surface">
       <RotatingHiasanBackground hiasan={5} />
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-16 md:gap-24">
         {/* Peta pemilihan desa — bentuk pulau + tombol, dibungkus panel

@@ -10,10 +10,12 @@ type ProkerDetailHeroProps = {
   title: string;
   coverImage?: string | null;
   villageName?: string | null;
+  pemilik?: string | null;
+  waktu?: string | null;
   accent: VillageAccent;
 };
 
-export function ProkerDetailHero({ title, coverImage, villageName, accent }: ProkerDetailHeroProps) {
+export function ProkerDetailHero({ title, coverImage, villageName, pemilik, waktu, accent }: ProkerDetailHeroProps) {
   const shouldReduceMotion = useReducedMotion();
   const styles = VILLAGE_ACCENT_STYLES[accent];
 
@@ -76,6 +78,14 @@ export function ProkerDetailHero({ title, coverImage, villageName, accent }: Pro
             <h1 className="font-serif text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.05] drop-shadow-lg">
               {title}
             </h1>
+
+            {(pemilik || waktu) && (
+              <p className="text-white/80 text-sm md:text-base font-medium flex flex-wrap items-center gap-x-2 gap-y-1">
+                {pemilik && <span>Digagas oleh {pemilik}</span>}
+                {pemilik && waktu && <span aria-hidden="true">·</span>}
+                {waktu && <span>{waktu}</span>}
+              </p>
+            )}
           </motion.div>
         </div>
       </motion.div>

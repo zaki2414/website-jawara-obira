@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { generateSlug } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import { Upload, Eye, ImageIcon } from "lucide-react";
@@ -14,7 +13,7 @@ import { useCroppedImageUpload } from "@/hooks/useCroppedImageUpload";
 import { CropModal } from "./CropModal";
 
 type UploadFormProps = {
-  userType: "gallery" | "news" | "culture" | "kkn";
+  userType: "gallery" | "culture" | "kkn";
 };
 
 export default function UploadForm({ userType }: UploadFormProps) {
@@ -70,11 +69,9 @@ export default function UploadForm({ userType }: UploadFormProps) {
       const table =
         userType === "gallery"
           ? "galleries"
-          : userType === "news"
-            ? "news"
-            : userType === "culture"
-              ? "culture_articles"
-              : "kkn_documentations";
+          : userType === "culture"
+            ? "culture_articles"
+            : "kkn_documentations";
 
       const payload: Record<string, string | null> = {
         image_url: imageUrl, // URL Cloudinary
@@ -86,13 +83,8 @@ export default function UploadForm({ userType }: UploadFormProps) {
 
       if (userType !== "culture")
         payload.village_id = (await getVillageId(village)) ?? null;
-      if (userType === "news") {
-        payload.slug = generateSlug(title);
-        payload.author_name = "Admin";
-        payload.published_at = new Date().toISOString();
-      }
 
-      // `table` dipilih dinamis dari 4 nama tabel berskema beda-beda —
+      // `table` dipilih dinamis dari 3 nama tabel berskema beda-beda —
       // typed client Supabase tidak bisa menyatukan overload .insert() untuk
       // union builder semacam ini (keterbatasan generic yang dikenal luas di
       // ekosistem Supabase untuk dynamic-table-name pattern). `as never`

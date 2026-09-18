@@ -6,11 +6,13 @@ import { KknPageBackground } from "@/components/kkn/KknPageBackground";
 import { getVillageAccent, nextVillageAccent, VILLAGE_ACCENT_STYLES } from "@/components/kkn/kknAccent";
 import { ProkerDetailHero } from "@/components/kkn/detail/ProkerDetailHero";
 import { ProkerRichTextSection } from "@/components/kkn/detail/ProkerRichTextSection";
-import { ProkerAchievementsSection } from "@/components/kkn/detail/ProkerAchievementsSection";
 import { ProkerGallerySection } from "@/components/kkn/detail/ProkerGallerySection";
-import { ProkerMetricsSidebar } from "@/components/kkn/detail/ProkerMetricsSidebar";
+import { ProkerMetricsSidebar, type ProkerMetric } from "@/components/kkn/detail/ProkerMetricsSidebar";
+import { sanitizeRichText } from "@/lib/sanitizeHtml";
 
 type ProkerDoc = { url?: string; image_url?: string; caption?: string };
+
+export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -39,16 +41,13 @@ export default async function KKNProkerDetail({ params }: Props) {
 
   if (error || !proker) return notFound();
 
-  const metrics = (proker.impact_metrics || {}) as Record<string, string | number>;
-  const achievements = proker.key_achievements || [];
+  const metrics = (Array.isArray(proker.impact_metrics) ? proker.impact_metrics : []) as ProkerMetric[];
   const docs = (Array.isArray(proker.documentation) ? proker.documentation : []) as ProkerDoc[];
 
   const accent = getVillageAccent(proker.villages?.name);
   const secondAccent = nextVillageAccent(accent);
-  const thirdAccent = nextVillageAccent(secondAccent);
   const styles = VILLAGE_ACCENT_STYLES[accent];
   const secondStyles = VILLAGE_ACCENT_STYLES[secondAccent];
-  const thirdStyles = VILLAGE_ACCENT_STYLES[thirdAccent];
 
   return (
     <article className="relative bg-aged-paper py-12 border-b-4 border-on-surface min-h-screen overflow-hidden">
@@ -59,24 +58,37 @@ export default async function KKNProkerDetail({ params }: Props) {
           title={proker.title}
           coverImage={proker.image_url}
           villageName={proker.villages?.name}
+          pemilik={proker.pemilik}
+          waktu={proker.waktu}
           accent={accent}
         />
 
+        {/* Paragraf pembuka. Batang aksen tebal di sisi kiri diganti garis
+            putus-putus di bawahnya — pemisah yang memang sudah jadi bahasa
+            situs ini (kartu bento, hero, entri budaya), bukan pola callout
+            generik yang cuma muncul di satu halaman. Penekanannya tetap ada,
+            dibawa ukuran teks dan jarak, bukan oleh batang warna. */}
         {proker.short_description && (
-          <p className={`text-lg md:text-xl font-sans font-medium text-on-surface-variant leading-relaxed border-l-4 ${styles.border} pl-4 py-1 italic mb-8`}>
-            {proker.short_description}
-          </p>
+          <div className="mb-8">
+            <p className="text-lg md:text-xl font-sans font-medium text-on-surface-variant leading-relaxed max-w-[62ch]">
+              {proker.short_description}
+            </p>
+            <div
+              className="mt-5 border-t-2 border-dashed border-outline-variant"
+              aria-hidden="true"
+            />
+          </div>
         )}
 
         <div className="grid md:grid-cols-12 md:gap-10 items-start">
           <div className="md:col-span-8 space-y-6">
-            {proker.goals && (
+            {proker.narrative && (
               <ProkerRichTextSection
                 icon="target"
                 iconChip={styles.iconChip}
                 border={styles.border}
-                title="Maksud & Tujuan Program"
-                html={proker.goals}
+                title="Deskripsi Program Kerja"
+                html={sanitizeRichText(proker.narrative)}
               />
             )}
 
@@ -86,12 +98,11 @@ export default async function KKNProkerDetail({ params }: Props) {
                 iconChip={secondStyles.iconChip}
                 border={secondStyles.border}
                 title="Hasil Realisasi Lapangan"
-                html={proker.results}
+                html={sanitizeRichText(proker.results)}
                 delay={0.05}
               />
             )}
 
-            <ProkerAchievementsSection achievements={achievements} border={thirdStyles.border} accent={thirdAccent} />
             <ProkerGallerySection docs={docs} />
           </div>
 

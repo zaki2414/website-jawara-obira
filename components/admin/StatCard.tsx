@@ -18,7 +18,7 @@ export function StatCard({ label, value, icon: Icon, accent, emptyHint }: StatCa
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border-2 border-on-surface p-5 hard-shadow-md transition-all hover:-translate-y-1 hover:hard-shadow ${a.solidBg}`}
+      className={`relative overflow-hidden rounded-2xl border-2 border-on-surface p-5 hard-shadow-md ${a.solidBg}`}
     >
       <Icon
         className={`pointer-events-none absolute -bottom-3 -right-3 size-20 opacity-10 ${a.text}`}

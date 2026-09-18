@@ -15,7 +15,7 @@ export function KKNStatCard({ label, value, icon: Icon, emptyHint }: KKNStatCard
   const isEmpty = value === 0;
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl border-2 border-on-surface bg-background p-4 hard-shadow-sm transition-all hover:-translate-y-1 hover:hard-shadow">
+    <div className="flex items-center gap-4 rounded-2xl border-2 border-on-surface bg-background p-4 hard-shadow-sm">
       <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-on-surface bg-tertiary text-on-tertiary">
         <Icon className="size-5" aria-hidden="true" />
       </span>

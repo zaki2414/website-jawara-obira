@@ -1,85 +1,97 @@
 TODO — ITEM YANG DIKETAHUI BELUM SELESAI
 ================================================================================
-Disusun: 2026-09-03, berdasarkan investigasi langsung ke kode (git status, grep,
-ls node_modules, dsb) — bukan asumsi. Update ulang tanggal di atas kalau item
-di bawah sudah dikerjakan/diverifikasi lagi.
+Disusun ulang: 2026-09-18, setelah audit produksi DAN pengerjaannya.
+Item yang sudah selesai DIHAPUS dari daftar, bukan dicoret — daftar ini tidak
+ada gunanya kalau isinya sebagian kebohongan.
 
-1) PLAYWRIGHT BELUM TERPASANG
-   - `package.json` sudah mencantumkan `"playwright": "^1.62.1"`.
-   - TAPI `node_modules/@playwright` tidak ada — berarti belum pernah `npm install`
-     untuk dependency ini, atau node_modules sempat di-reset tanpa reinstall.
-   - Dampak: automated browser testing (buka situs sendiri, screenshot, cek tiap
-     halaman) belum bisa jalan sama sekali sampai ini dibereskan.
-   - Perbaikan: `npm install`, lalu `npx playwright install` untuk browser binary-nya.
-
-2) REDESIGN HOME PAGE — SUDAH JALAN TAPI BELUM TUNTAS & BELUM DI-COMMIT
-   - Sistem scroll-reveal GSAP ScrollTrigger baru (`lib/scrollReveal.ts` +
-     `components/shared/Reveal.tsx`) dan odometer statistik
-     (`components/home/CounterNumber.tsx`) sudah dibuat.
-   - `KKNSection.tsx`, `PotensiBento.tsx`, `StatsSection.tsx` sudah direfactor
-     besar-besaran mengikuti sistem baru ini.
-   - `HeroSection.tsx` HAMPIR TIDAK TERSENTUH (cuma +2/-1 baris) — kemungkinan
-     besar ini bagian yang belum digarap ulang mengikuti sistem reveal baru,
-     padahal instruksi awal minta "rombak" menyeluruh termasuk hero.
-   - SEMUA perubahan di atas (16 file modified + 4 file baru + rename gambar
-     hero) MASIH UNCOMMITTED per 2026-09-03. Risiko hilang kalau ada masalah
-     sebelum sempat di-commit. Prioritas: selesaikan HeroSection dulu, baru
-     commit sekali sebagai satu unit kerja yang utuh.
-
-3) MIDDLEWARE BELUM MIGRASI KE `proxy.ts`
-   - Next.js 16 sudah men-deprecate convention file `middleware.ts` — warning
-     ini muncul setiap kali `next dev` dijalankan.
-   - `middleware.ts` (guard /admin & /login) masih pakai convention lama.
-   - Belum ada `proxy.ts` di root project.
-
-4) SISA `catch (err: any)` YANG BELUM DI-NARROW
-   - `app/auth/callback/route.ts:45`
-   - `app/api/toga/plants/route.ts:16`
-   - Ganti ke `catch (err: unknown)` + narrowing `err instanceof Error` sesuai
-     aturan di CLAUDE.md §4.1. (Sudah banyak berkurang dari klaim lama 35 lokasi
-     jadi cuma 2 — tinggal dua ini.)
-
-5) SERVICE ROLE KEY SALAH PREFIX DI .env.local
-   - `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` masih pakai prefix `NEXT_PUBLIC_`.
-   - Saat ini TIDAK dipakai di kode manapun (aman untuk sekarang), tapi
-     penamaannya menyesatkan — kalau nanti ada yang pakai tanpa sadar prefix
-     itu bikin Next.js embed value-nya ke client bundle.
-   - Perbaikan: rename ke `SUPABASE_SERVICE_ROLE_KEY` (tanpa prefix) di
-     `.env.local` dan tempat env var itu di-set (Vercel dsb), pastikan tidak
-     ada referensi yang patah.
-
-6) GITHUB ACTIONS KEEP-ALIVE — SUDAH DI-COMMIT LOKAL, BELUM DI-PUSH
-   - File `.github/workflows/supabase-keepalive.yml` sudah dibuat & di-commit
-     (commit lokal `552bd28`), tapi per 2026-09-03 belum ada di `origin/master`.
-   - User sudah mengisi 2 repo secret (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) di
-     GitHub, tapi belum berguna sampai commit ini di-push.
-   - Setelah push: trigger manual sekali lewat tab Actions → "Run workflow"
-     untuk pastikan sukses sebelum mengandalkan jadwal otomatisnya (Senin &
-     Kamis 03:00 UTC).
-
-7) CLAUDE.md SUDAH KETINGGALAN ZAMAN DARI KODE SEBENARNYA
-   - Banyak item di bagian "⚠ Utang Teknis" CLAUDE.md ternyata SUDAH selesai
-     (dan sudah ter-commit di commit f72fcd1), tapi dokumennya tidak diupdate:
-     ui/button.tsx, adopsi ui/card+badge, konsolidasi Entity* shared components,
-     constants/nav.ts, loading.tsx+error.tsx per-route, generateMetadata,
-     useReducedMotion, dan theming admin (ternyata sudah jadi sistem sadar,
-     bukan "belum diputuskan" seperti tertulis).
-   - Perlu direvisi supaya sesi LLM berikutnya tidak salah kerja ulang sesuatu
-     yang sudah selesai, atau salah menganggap sesuatu masih "utang" padahal
-     sudah fixed.
-
-8) BELUM ADA RENCANA PASCA-KKN (HANDOFF)
-   - Tidak ada dokumen manapun (`context.txt`, `ROADMAP.md`, dst) yang membahas
-     siapa yang pegang akses dashboard Supabase & repo GitHub setelah tim KKN
-     selesai bertugas.
-   - Relevan karena misi proyek ini eksplisit "arsip digital jangka panjang",
-     tapi Supabase free-tier auto-pause project setelah 7 hari tanpa aktivitas
-     (item #6 di atas cuma mitigasi teknis, bukan pengganti rencana handoff
-     yang sebenarnya — siapa yang punya login, siapa yang bayar kalau upgrade
-     ke Pro plan nanti, dsb).
+Utang teknis yang sifatnya kualitas kode ada di CLAUDE.md §5. Jangan
+diduplikasi ke sini.
 
 ================================================================================
-Cara pakai file ini: sebelum menganggap sesuatu "belum dikerjakan", verifikasi
-ulang ke kode (grep/ls/git status) — jangan percaya daftar ini mentah-mentah
-kalau sudah lama sejak tanggal sinkronisasi di atas, karena progress bisa
-berubah cepat.
+BUTUH KEPUTUSAN / AKSES KAMU — tidak bisa dikerjakan dari sisi kode
+================================================================================
+
+1) RENAME VARIABEL RAHASIA DI VERCEL  [prioritas tertinggi]
+   - Di `.env.local` sudah di-rename: `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`
+     -> `SUPABASE_SECRET_KEY`.
+   - BELUM dilakukan di environment variables project Vercel, dan itu di luar
+     jangkauan repo. Selama namanya di sana masih berprefix `NEXT_PUBLIC_`,
+     ranjaunya masih terpasang di build produksi: satu baris kode client yang
+     merujuk nama itu akan mengirim kunci yang melewati seluruh RLS ke setiap
+     pengunjung.
+   - Langkah: Vercel -> Project -> Settings -> Environment Variables ->
+     rename, lalu redeploy.
+   - Pertimbangkan juga ROTATE kuncinya di Supabase (Settings -> API keys),
+     karena kunci itu sempat berada di berkas yang namanya mengundang
+     pemakaian salah.
+
+2) MONITORING / ERROR TRACKING BELUM ADA
+   - Kalau halaman error di produksi, tidak ada yang memberi tahu. Satu-satunya
+     cara tahu sekarang adalah ada orang yang kebetulan membukanya dan lapor.
+   - Butuh akun: Sentry free tier (error tracking, paling berguna) atau Vercel
+     Analytics (trafik + Web Vitals, satu klik kalau sudah di Vercel).
+   - Tidak dikerjakan otomatis karena memasang salah satunya berarti mengirim
+     data ke pihak ketiga — itu keputusanmu, bukan keputusan teknis.
+
+3) BELUM ADA RENCANA PASCA-KKN (HANDOFF)
+   - Tidak ada dokumen yang menyebut siapa yang memegang akses dashboard
+     Supabase, akun Cloudinary, domain, dan repo GitHub setelah tim KKN
+     selesai bertugas.
+   - Relevan karena misi proyek ini eksplisit "arsip digital jangka panjang",
+     sementara Supabase free-tier auto-pause setelah 7 hari tanpa aktivitas.
+     Workflow keep-alive cuma mitigasi teknis, bukan pengganti rencana.
+   - Tidak bisa ditulis dari sisi kode: isinya nama orang dan kesepakatan.
+
+================================================================================
+UTANG YANG MASIH TERBUKA DI KODE
+================================================================================
+
+4) 12 ERROR LINT LAMA
+   - Mayoritas aturan React Compiler: "Calling setState synchronously within an
+     effect" (`ImageUploader`, `ExtraImageUploader`, `UMKMForm`, `login/page`,
+     `not-found`) dan "Cannot call impure function during render"
+     (`not-found.tsx`, 5 lokasi).
+   - Bukan bug yang terlihat sekarang, tapi selama ini ada, step Lint di
+     `.github/workflows/ci.yml` sengaja dibuat `continue-on-error` supaya CI
+     tidak merah terus dan berhenti dibaca. Lunasi, lalu naikkan jadi blocking.
+
+5) CSP MASIH `'unsafe-inline' 'unsafe-eval'` DI script-src
+   - Keputusan sadar, bukan kelalaian — alasannya ditulis di next.config.ts dan
+     CLAUDE.md §6.6: mengganti dengan nonce mewajibkan nonce per-request dari
+     proxy.ts, yang memaksa setiap halaman jadi dinamis dan menghapus ISR.
+   - Kalau nanti ISR tidak lagi jadi prioritas, ini bisa diperketat.
+
+================================================================================
+SUDAH DIKERJAKAN 2026-09-18 (jangan diaudit ulang)
+================================================================================
+
+- Dependency: 28 kerentanan (1 critical Next RCE, 3 high) -> NOL.
+  next 16.2.12 -> 16.3.5, @tiptap/* 3.23.6 -> 3.31.3, eslint-config-next
+  disamakan. Build + smoke test hijau setelah upgrade.
+- Security header: next.config.ts kini memasang X-Frame-Options, nosniff,
+  Referrer-Policy, Permissions-Policy, HSTS (production), dan CSP.
+- Sanitasi rich text: lib/sanitizeHtml.ts, dipasang di tiga titik render
+  dangerouslySetInnerHTML, di sisi server. Diuji: script/onerror/javascript:
+  /atribut event dibuang, konten sah lolos utuh.
+- Log PII: email pengguna tidak lagi dicetak di setiap request /admin.
+- middleware.ts -> proxy.ts (konvensi Next 16).
+- Nol `any` di seluruh codebase.
+- robots.txt + sitemap.xml (app/robots.ts, app/sitemap.ts, lib/siteUrl.ts).
+- revalidate/dynamic konsisten di 17 halaman publik.
+- Smoke test Playwright (`npm test`) + workflow CI (typecheck + build per PR).
+- Tekstur kertas: sebelumnya ditarik dari transparenttextures.com di setiap
+  kunjungan, dan `aged-paper.png` ternyata 404 di sana entah sejak kapan —
+  28 pemakaian `.bg-aged-paper` selama ini merender tanpa tekstur. Kini
+  self-hosted di public/textures/.
+- Rujukan file yang patah di komentar kode (convert-shp.mjs,
+  create-map-buildings-table.sql, fix-villages-rls-policies.sql) diperbaiki.
+
+Sudah diverifikasi AMAN, jangan dikhawatirkan lagi:
+- RLS menolak tulis anonim di kkn_prokers, villages, culture_articles, umkm,
+  galleries (`42501`). `admin_users` dibaca anonim balik `[]`.
+- /api/gmaps/resolve: guard admin + https-only + allowlist hostname + timeout.
+- /api/cloudinary/sign: guard admin + allowlist folder; API secret tidak
+  pernah keluar dari server.
+- Tidak ada nilai rahasia apa pun di bundle browser (diuji langsung ke
+  .next/static setelah build).
+- .env.local tidak pernah ter-commit; tidak ada jejak .env di riwayat git.

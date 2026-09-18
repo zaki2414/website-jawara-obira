@@ -3,8 +3,7 @@
 
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Maximize2, Home, MapPinned, Sparkles, X, Landmark } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Users, Maximize2, Home, MapPinned, X, Landmark } from "lucide-react";
 import { VILLAGE_VISUAL_META, type VillageContent, type VillageKey } from "@/constants/profil";
 
 type VillageDetailPanelProps = {
@@ -21,7 +20,11 @@ type VillageDetailPanelProps = {
 // Konten (nama, deskripsi, statistik, foto) datang dari prop `villages` yang
 // dirakit di app/profil/page.tsx dari tabel `villages`+`village_statistics`
 // (dikelola admin di /admin/desa) — bukan hardcode lagi, jadi field
-// title/longDesc/highlight/image bisa null selama admin belum mengisinya.
+// description/image bisa null selama admin belum mengisinya.
+//
+// title/highlight/longDesc yang dulu ada di sini sudah dihapus dari seluruh
+// alur (VillageContent, VillageForm, VillagePayload) — kolomnya tidak pernah
+// dibuat di tabel `villages`, jadi tiap update selalu gagal (PGRST204).
 export function VillageDetailPanel({ villages, village, onClose }: VillageDetailPanelProps) {
   const data = village ? villages[village] : null;
   // Ikon di-resolve DI SINI (client) dari VILLAGE_VISUAL_META, bukan dari
@@ -66,12 +69,6 @@ export function VillageDetailPanel({ villages, village, onClose }: VillageDetail
                 </div>
               )}
               <div className={`absolute inset-0 opacity-15 mix-blend-multiply ${data.badgeColor.split(" ")[0]}`} />
-              {data.highlight && (
-                <Badge variant="solid-tertiary" className="absolute bottom-3 left-3">
-                  <Sparkles className="size-3" aria-hidden="true" />
-                  {data.highlight}
-                </Badge>
-              )}
             </div>
 
             <div className="flex flex-col justify-between p-6 md:col-span-3 md:p-8">
@@ -80,19 +77,12 @@ export function VillageDetailPanel({ villages, village, onClose }: VillageDetail
                   {Icon && (
                     <Icon className={`size-9 shrink-0 rounded-lg border-2 p-2 ${data.badgeColor}`} aria-hidden="true" />
                   )}
-                  <div>
-                    <h3 className="font-serif text-2xl font-black tracking-tight text-on-surface">
-                      {data.name}
-                    </h3>
-                    {data.title && (
-                      <p className="text-xs font-bold uppercase tracking-widest text-primary">
-                        {data.title}
-                      </p>
-                    )}
-                  </div>
+                  <h3 className="font-serif text-2xl font-black tracking-tight text-on-surface">
+                    {data.name}
+                  </h3>
                 </div>
                 <p className="text-on-surface-variant font-medium leading-relaxed">
-                  {data.longDesc || data.description || "Deskripsi desa ini belum ditambahkan admin."}
+                  {data.description || "Deskripsi desa ini belum ditambahkan admin."}
                 </p>
               </div>
 

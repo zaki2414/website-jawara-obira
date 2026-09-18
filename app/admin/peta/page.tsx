@@ -62,7 +62,7 @@ export default async function AdminPetaList() {
             </p>
             <p className="max-w-sm text-sm text-on-surface-variant">
               Jalankan seed tabel <code>map_facilities</code> di Supabase terlebih dahulu (lihat
-              catatan di <code>scripts/convert-shp.mjs</code>).
+              catatan di <code>data-sources/convert-shp.mjs</code>).
             </p>
           </div>
         ) : (

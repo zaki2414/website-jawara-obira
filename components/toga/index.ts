@@ -4,3 +4,5 @@ export { TogaFilterBar } from "./TogaFilterBar";
 export { TogaCard } from "./TogaCard";
 export { TogaGrid } from "./TogaGrid";
 export { TogaEmptyState } from "./TogaEmptyState";
+export { TogaIndexRow } from "./TogaIndexRow";
+export { TogaAlphabetRail } from "./TogaAlphabetRail";

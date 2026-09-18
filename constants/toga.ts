@@ -106,6 +106,10 @@ export const TOGA_ACCENT_STYLES: Record<
     border: string;
     /** Warna teks/ikon aksen yang tetap kontras di atas bg-background. */
     text: string;
+    /** Warna judul kartu saat hover. Ditulis sebagai kelas LITERAL (bukan
+     *  `group-hover:${text}`) karena Tailwind memindai kelas dari sumber dan
+     *  tidak pernah melihat kelas yang dirakit saat runtime. */
+    hoverText: string;
   }
 > = {
   primary: {
@@ -113,12 +117,14 @@ export const TOGA_ACCENT_STYLES: Record<
     topBar: "bg-primary",
     border: "border-primary",
     text: "text-primary",
+    hoverText: "group-hover:text-primary",
   },
   tertiary: {
     badge: "bg-tertiary text-on-tertiary",
     topBar: "bg-tertiary",
     border: "border-tertiary",
     text: "text-on-tertiary",
+    hoverText: "group-hover:text-on-tertiary",
   },
 };
 

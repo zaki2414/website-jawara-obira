@@ -1,4 +1,5 @@
 // lib/auth.ts
+import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,7 +11,11 @@ const AUTH_BYPASSED =
   process.env.NODE_ENV === "development" &&
   process.env.DISABLE_ADMIN_AUTH === "true";
 
-export async function getAdminUser() {
+// cache() dedupe: layout.tsx DAN page.tsx tiap route /admin/** sama-sama
+// panggil getAdminUser() untuk guard sendiri-sendiri; tanpa ini itu jadi 2
+// request auth Supabase per navigasi (ikut andil ke rate-limit 429 saat
+// banyak halaman admin dibuka berturut-turut).
+export const getAdminUser = cache(async () => {
   if (AUTH_BYPASSED) {
     return {
       id: "dev-bypass",
@@ -37,4 +42,4 @@ export async function getAdminUser() {
   if (error || data?.role !== "admin") return null;
 
   return user;
-}
+});

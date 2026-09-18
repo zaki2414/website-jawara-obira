@@ -35,12 +35,17 @@ type RevealOptions = {
 // observer-nya tidak jalan seluruh section jadi blok warna kosong.
 const PRESETS: Record<RevealKind, gsap.TweenVars> = {
   // Blok teks/heading: naik pelan dari bawah.
-  rise: { y: 28, opacity: 0, duration: 0.62 },
+  rise: { y: 24, opacity: 0, duration: 0.9 },
   // Grid kartu: tiap anak menyusul dengan jeda pendek.
-  stagger: { y: 34, opacity: 0, duration: 0.58, stagger: 0.06 },
-  // Panel besar (hero band, banner): skala nyaris tak terlihat + blur
-  // tipis supaya terasa "mendarat", bukan sekadar geser.
-  panel: { y: 20, opacity: 0, scale: 0.985, filter: "blur(6px)", duration: 0.7 },
+  stagger: { y: 28, opacity: 0, duration: 0.85, stagger: 0.09 },
+  // Panel besar (hero band, banner): skala nyaris tak terlihat, supaya
+  // terasa "mendarat" alih-alih sekadar bergeser.
+  //
+  // `filter: blur(6px)` dihapus dari preset ini: menganimasikan blur memaksa
+  // browser menggambar ulang seluruh permukaan panel pada setiap frame, dan
+  // pada panel selebar layar itu cukup untuk menjatuhkan frame rate — persis
+  // saat elemennya sedang bergerak dan jank paling terlihat.
+  panel: { y: 22, opacity: 0, scale: 0.99, duration: 0.95 },
 };
 
 /**
@@ -56,7 +61,11 @@ export function applyReveal(el: HTMLElement, opts: RevealOptions = {}): () => vo
 
   registerScrollTrigger();
 
-  const { kind = "rise", itemSelector = "[data-reveal-item]", start = "top 82%", delay = 0 } = opts;
+  // start "top 88%" (bukan 82%): animasi mulai saat elemen baru menyentuh
+  // tepi bawah layar, jadi sebagian besar geraknya sudah selesai sebelum
+  // elemen masuk zona baca. Dengan 82% elemen sudah cukup dalam di layar saat
+  // mulai bergerak, sehingga sentakannya justru terlihat.
+  const { kind = "rise", itemSelector = "[data-reveal-item]", start = "top 88%", delay = 0 } = opts;
 
   const targets =
     kind === "stagger" ? Array.from(el.querySelectorAll<HTMLElement>(itemSelector)) : [el];
@@ -65,8 +74,19 @@ export function applyReveal(el: HTMLElement, opts: RevealOptions = {}): () => vo
   const tween = gsap.from(targets, {
     ...PRESETS[kind],
     delay,
-    ease: "expo.out", // exponential ease-out — padanan --ease-out di CSS
-    clearProps: "filter,transform,opacity", // lepas inline style setelah selesai
+    // "power2.out", BUKAN "expo.out".
+    //
+    // Inilah penyebab utama gerak reveal terasa menyentak. expo.out adalah
+    // kurva perlambatan paling ekstrem yang ada: ia menempuh sekitar dua
+    // pertiga jarak dalam sepersepuluh pertama durasinya, lalu merayap di
+    // sisanya. Efeknya elemen seperti "dilempar" ke tempatnya — persis kesan
+    // kaget yang dilaporkan. power2.out menyebar geraknya jauh lebih merata,
+    // jadi mata sempat mengikuti seluruh lintasannya.
+    ease: "power2.out",
+    // force3D memaksa transform dijalankan di GPU sehingga geraknya tidak
+    // bersaing dengan pekerjaan main thread saat halaman sedang digulir.
+    force3D: true,
+    clearProps: "transform,opacity", // lepas inline style setelah selesai
     scrollTrigger: {
       trigger: el,
       start,
