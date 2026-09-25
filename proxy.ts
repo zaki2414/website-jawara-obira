@@ -50,8 +50,12 @@ export async function proxy(request: NextRequest) {
     // siapa pun yang punya akses dashboard project, sementara ini berjalan di
     // SETIAP request ke /admin — jadi satu-satunya yang dicatat di sini adalah
     // kegagalan yang tidak terduga, tanpa identitas.
-    if (error) {
-      console.error("[proxy] getUser() mengembalikan error:", error.message);
+    // "Auth session missing" BUKAN kegagalan — itu jalur normal setiap
+    // pengunjung anonim yang menyentuh /login atau /admin, dan mencatatnya
+    // berarti satu baris log per kunjungan tanpa informasi apa pun. Yang
+    // dicatat hanya kegagalan yang benar-benar tak terduga (mis. 429).
+    if (error && !/session missing/i.test(error.message)) {
+      console.error("[proxy] getUser() gagal tak terduga:", error.message);
     }
   } catch (err) {
     console.error(

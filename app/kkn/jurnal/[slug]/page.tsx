@@ -44,6 +44,12 @@ export default async function KKNJournalDetail({ params }: Props) {
   // section di halaman ini (hero, konten, sidebar) — cuma bagian
   // dokumentasi/galeri (JournalGallerySection) yang di-hardcode tertiary,
   // itu diatur SENDIRI di dalam komponennya (bukan lewat prop di sini).
+  // Jurnal dengan village_id NULL berarti hari itu dikerjakan kedua tim
+  // bersama-sama — satu entri, bukan dua entri kembar dengan foto yang sama
+  // (lihat "Umum / Kedua Desa" di form admin). Sebelumnya badge desanya
+  // sekadar HILANG di kasus ini, jadi pembaca tidak bisa membedakan "kegiatan
+  // gabungan" dari "datanya lupa diisi". Diberi label eksplisit.
+  const villageLabel = journal.villages?.name ?? "Kedua Desa";
   const accent = getVillageAccent(journal.villages?.name);
   const secondAccent = nextVillageAccent(accent);
   const styles = VILLAGE_ACCENT_STYLES[accent];
@@ -58,7 +64,7 @@ export default async function KKNJournalDetail({ params }: Props) {
           title={journal.title}
           coverImage={journal.cover_image}
           activityDate={journal.activity_date}
-          villageName={journal.villages?.name}
+          villageName={villageLabel}
           accent={accent}
         />
 
@@ -71,7 +77,7 @@ export default async function KKNJournalDetail({ params }: Props) {
           <div className="md:col-span-4 md:sticky md:top-24 mt-6 md:mt-0">
             <JournalInfoSidebar
               activityDate={journal.activity_date}
-              villageName={journal.villages?.name}
+              villageName={villageLabel}
               attachmentCount={images.length}
               border={secondStyles.border}
               accent={secondAccent}

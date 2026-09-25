@@ -1,10 +1,4 @@
 import { defineConfig, devices } from "@playwright/test";
-import { config as loadEnv } from "dotenv";
-
-// .env.local dibaca supaya tes tahu flag seperti DISABLE_ADMIN_AUTH — tanpa
-// ini tes guard /admin gagal karena alasan yang salah di mesin yang memakai
-// bypass dev.
-loadEnv({ path: ".env.local", quiet: true });
 
 // Konfigurasi minimal, sengaja. Yang dibutuhkan situs ini bukan piramida tes,
 // tapi SATU jaring pengaman: memastikan setiap halaman publik benar-benar
@@ -26,13 +20,21 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 
-  // Server-nya dinyalakan Playwright sendiri di port terpisah (3100), supaya
-  // tidak bentrok dengan `npm run dev` yang mungkin sedang jalan di 3000 —
-  // atau dengan project LAIN yang kebetulan memakai 3000.
+  // Dijalankan di mode PRODUKSI, bukan dev, karena dua alasan:
+  //
+  // 1. Next 16 menolak menyalakan dev server kedua untuk direktori yang sama
+  //    ("Another next dev server is already running"). Dengan `next dev`,
+  //    `npm test` jadi gagal setiap kali kamu kebetulan sedang `npm run dev` —
+  //    persis kondisi paling normal saat orang ingin menjalankan tes.
+  // 2. Yang ingin dijamin tes ini adalah perilaku yang benar-benar ter-deploy:
+  //    ISR, security header, dan sanitasi berjalan di jalur produksi.
+  //
+  // Port 3100 dipakai supaya tidak bentrok dengan dev server di 3000/3001,
+  // maupun dengan project lain yang kebetulan memakai port itu.
   webServer: {
-    command: `npx next dev --port ${PORT}`,
+    command: `npm run build && npx next start --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: 300_000,
   },
 });

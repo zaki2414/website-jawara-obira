@@ -322,7 +322,7 @@ export default function KKNJournalForm({
           </div>
           <div>
             <label className="block text-label-sm font-black uppercase tracking-wide text-on-surface-variant mb-1.5">
-              Lokasi Desa *
+              Lokasi Desa
             </label>
             <select
               value={village}
@@ -336,8 +336,15 @@ export default function KKNJournalForm({
                 </option>
               ))}
             </select>
-            {villages.length === 0 && (
+            {villages.length === 0 ? (
               <p className="text-xs text-on-surface-variant/60 mt-1">Memuat data desa...</p>
+            ) : (
+              <p className="text-xs text-on-surface-variant/80 mt-1.5 leading-relaxed">
+                Kalau hari itu <strong className="font-black">kedua tim bergerak bareng</strong> dan
+                ceritanya sama, pilih <strong className="font-black">&quot;Umum / Kedua Desa&quot;</strong> —
+                cukup satu entri, tidak perlu mengunggah foto yang sama dua kali. Entri itu otomatis
+                muncul di filter Kawasi maupun Soligi.
+              </p>
             )}
           </div>
         </section>

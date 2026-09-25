@@ -685,6 +685,13 @@ export async function getAllKKNJournalsForAdmin() {
   }
 }
 
+// Ketiga query jurnal publik di bawah menyaring `published` SECARA EKSPLISIT
+// meski RLS sudah menahan draft dari pengunjung anonim. Alasannya: klien
+// Supabase di Server Component membawa sesi pemakai, jadi ketika ADMIN yang
+// sedang login membuka halaman publik, RLS meloloskan draft miliknya dan
+// kalender publik jadi menampilkan entri yang pengunjung lain tidak lihat —
+// dan mengkliknya berujung notFound(), karena getKKNJournalBySlug memang
+// menyaring `published`. Filter ini menyamakan ketiganya.
 export async function getKKNJournalsByMonth(
   year: number,
   month: number,
@@ -693,12 +700,26 @@ export async function getKKNJournalsByMonth(
   try {
     const supabase = await createClient();
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-    const endDate = new Date(year, month, 0).toISOString().split("T")[0];
+    // Tanggal terakhir bulan ini dirakit SEBAGAI STRING, jangan lewat
+    // toISOString().
+    //
+    // `new Date(year, month, 0)` menghasilkan tengah malam WAKTU LOKAL di hari
+    // terakhir bulan itu. `.toISOString()` lalu mengubahnya ke UTC — dan di
+    // zona waktu mana pun yang di DEPAN UTC (Asia/Jakarta UTC+7, misalnya) itu
+    // mundur ke tanggal sebelumnya. Efeknya: `lte("activity_date", …)` memakai
+    // tanggal 29 untuk bulan Juni, dan HARI TERAKHIR SETIAP BULAN hilang dari
+    // kalender tanpa error apa pun. Lebih jahat lagi, ini bergantung zona waktu
+    // mesin: benar di server Vercel (UTC), salah di laptop developer Indonesia.
+    //
+    // `.getDate()` aman dipakai karena yang diambil cuma ANGKA harinya.
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
     let query = supabase
       .from("kkn_journals")
       .select(
         "id, title, slug, cover_image, activity_date, village_id, villages(name)",
       )
+      .eq("published", true)
       .gte("activity_date", startDate)
       .lte("activity_date", endDate)
       .order("activity_date", { ascending: true });
@@ -1268,6 +1289,7 @@ export async function getLatestKKNJournals(limit = 3) {
     const { data, error } = await supabase
       .from("kkn_journals")
       .select("id, title, slug, cover_image, activity_date, villages(name)")
+      .eq("published", true)
       .order("activity_date", { ascending: false })
       .limit(limit);
     return { data, error };
@@ -1289,6 +1311,7 @@ export async function getKKNJournalMonthCounts() {
     const { data, error } = await supabase
       .from("kkn_journals")
       .select("activity_date")
+      .eq("published", true)
       .order("activity_date", { ascending: true });
     if (error || !data) return { data: null, error };
 
